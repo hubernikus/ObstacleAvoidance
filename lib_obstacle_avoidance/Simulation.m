@@ -31,7 +31,7 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 %       - .plot     setting simulation graphic on (true) or off (false) [default: true]
 %       - .tol:     A positive scalar defining the threshold to stop the
 %                   simulator. If the motions velocity becomes less than
-%                   tol, then simulation stops [default: 0.001]
+%                   tol, then simulation stop5 [default: 0.001]
 %       - .perturbation: a structure to apply pertorbations to the robot.
 %                        This variable has the following subvariables:
 %       - .perturbation.type: A string defining the type of perturbations.
@@ -88,9 +88,9 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 
 % Additional variable - introduce in funciton header
 %figShow = 'off' % either 'on' or 'off'
-figSave = true
-figName = get(gcf,'Name')
-filename = sprintf(strcat('fig/',figName,'.gif'))
+figSave = false
+figName = get(gcf,'Name');
+DynamicalSystems = sprintf(strcat('fig/',figName,'.gif'));
 
 
 %% parsing inputs
@@ -199,12 +199,12 @@ while true
     % This part if for the obstacle avoidance module
     if obs_bool
         % applying perturbation on the obstacles
-        for n=1:length(obs)
+        for n=1:length(obs) 
             if isfield(obs{n},'perturbation')
                 if i >= round(obs{n}.perturbation.t0/options.dt)+1 && i <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
                     x_obs{n}(:,end+1) = x_obs{n}(:,end) + obs{n}.perturbation.dx*options.dt;
                     obs{n}.x0 = x_obs{n}(:,end);
-                    xd_obs = obs{n}.perturbation.dx;
+                    xd_obs = obs{n}.perturbation.dx; % all velocities ????
                     if options.plot %plotting options
                         plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt);
                     end
@@ -218,7 +218,8 @@ while true
         end
         
         for j=1:nbSPoint % j - iteration over number of starting points
-            [xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
+            %[xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
+           [xd(:,i,j) b_contour(j)] = obs_modulation_rotation(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
         end
 
     end
@@ -384,8 +385,6 @@ switch mode
             end
             sp.axis = gca;
             hold on
-            %sp.xT = plot(xT(1),xT(2),'k*','EraseMode','none','markersize',10,'linewidth',1.5);!!!DELeTE
-            %sp.xT_l = plot(xT(1),xT(2),'k--','EraseMode','none','linewidth',1.5);!!!DELeTE
             sp.xT = plot(xT(1),xT(2),'k*','markersize',10,'linewidth',1.5);
             sp.xT_l = plot(xT(1),xT(2),'k--','linewidth',1.5);
             for j=1:nbSPoint
@@ -398,7 +397,7 @@ switch mode
             grid on;box on
             
             if b_obs
-                [x_obs x_obs_sf] = obs_draw_ellipsoid(obs,40);
+                [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,40);
                 for n=1:size(x_obs,3)
                     sp.obs(n) = patch(x_obs(1,:,n),x_obs(2,:,n),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]);
                     sp.obs_sf(n) = plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
