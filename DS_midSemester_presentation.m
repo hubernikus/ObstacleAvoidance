@@ -25,7 +25,7 @@ end
 opt_sim.dt = 0.1; %integration time steps
 opt_sim.i_max = 100; %maximum number of iterations
 opt_sim.tol = 0.1; % convergence tolerance
-opt_sim.plot = true; % enabling the animation
+opt_sim.plot = true; % enabling the animationqq
 opt_sim.model = 1; % first order ordinary differential equation
 opt_sim.obstacle = []; %no obstacle is defined
 
@@ -204,24 +204,26 @@ x0 = [-10*ones(1,10); (1:N_samples)/N_samples*20-8];
 % Place obstacles
 obs = [];
 % obstacle 1
-obs{1}.a = [1 1;2 2];
-obs{1}.p = [1 1;1 1];
-obs{1}.partition = [-pi 0;0 pi];
-obs{1}.x0 = [-6;1];
-obs{1}.sf = [1.2;1.2];
-obs{1}.rho = 1.5;
-obs{1}.th_r = 0*pi/180;
+i = 2;
+obs{i}.a = [1 1;2 2];
+obs{i}.p = [1 1;1 1];
+obs{i}.partition = [-pi 0;0 pi];
+obs{i}.x0 = [-6;1];
+obs{i}.sf = [1.2;1.2];
+obs{i}.rho = 1.5;
+obs{i}.th_r = 0*pi/180;
 % obstacle 2
-obs{2}.a = [0.5 0.5; 2 2];
-obs{2}.p = [1 1;1 1];
-obs{2}.partition = [-pi 0;0 pi];
-obs{2}.x0 = [-8;-5];
-obs{2}.sf = [1.2;1.2];
-obs{2}.rho = 1.5;  % Reactivity
-obs{2}.th_r = 0*pi/180;
-obs{2}.perturbation.t0 = 0;
-obs{2}.perturbation.tf = 10;
-obs{2}.perturbation.dx = [0;1];
+i = 1;
+obs{i}.a = [0.5 0.5; 2 2];
+obs{i}.p = [1 1;1 1];
+obs{i}.partition = [-pi 0;0 pi];
+obs{i}.x0 = [-8;-5];
+obs{i}.sf = [1.2;1.2];
+obs{i}.rho = 1.5;  % Reactivity
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 10;
+obs{i}.perturbation.dx = [0;1];
 
 
 opt_sim.obstacle = obs;

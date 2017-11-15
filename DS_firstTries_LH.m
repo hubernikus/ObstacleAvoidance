@@ -280,7 +280,7 @@ opt_sim.obstacle = obs;
 
 fig(1) = figure('name','First demo: Streamlines of the original DS','position',[100 550 560 420]);
 opt_sim.figure = fig(1);
-Simulation_improved(x0,[],fn_handle,opt_sim); % NOT good IC
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 fprintf('End 2D-Simulation \n');
 
 
