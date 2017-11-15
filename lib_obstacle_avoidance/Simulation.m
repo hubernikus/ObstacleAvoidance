@@ -219,7 +219,7 @@ while true
         
         for j=1:nbSPoint % j - iteration over number of starting points
             %[xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
-           [xd(:,i,j) b_contour(j)] = obs_modulation_rotation(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
+           [xd(:,i,j)] = obs_modulation_rotation(x(:,i,j),xd(:,i,j),obs,xd_obs);
         end
 
     end
