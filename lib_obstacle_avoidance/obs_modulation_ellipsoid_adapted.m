@@ -1,4 +1,4 @@
-function [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,xd_obs)
+function [xd b_contour M] = obs_modulation_ellipsoid_adapted(x,xd,obs,b_contour,xd_obs)
 %
 % Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %
@@ -78,7 +78,14 @@ N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
 
-xd = xd-xd_obs ; %computing the relative velocity with respect to the obstacle
+xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
+movingTowards = false;
+% Object moving towards me...
+if(sum(abs(xd_obs)))
+    if(dot(xd_obs,x-obs{1}.x0)> 0)
+        movingTowards = true
+    end
+end
 
 if d==3
     E = zeros(d,d+1,N);
@@ -96,7 +103,7 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
-    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
+    [E(:,:,n) Gamma(n)] = x(d,x_t,obs{n});
 end
 
 % [tmp, obs_order] = sort(Gamma,'descend');
@@ -146,13 +153,19 @@ if b_contour==1
         xd = obs{n}.extra.C_Amp*contour_dir; %extra.C_Amp is the desired amplitude of movement along the controuring direction
     end
 else
-    xd = M*xd; %velocity modulation
+    if movingTowards
+        if(dot(M*xd+xd_obs,xd_obs) > 0) % Moving opposite the object
+            fprintf('opposit dir \n')
+            xd = M'*xd;
+            M = M
+        else
+            xd = M*xd; %velocity modulation
+        end
+    end
 end
 
-xd = xd + xd_obs ; %transforming back the velocity into the global coordinate system
-
 function [E Gamma] = compute_basis_matrix(d,x_t,obs)
-% For an arbitrary shap, the next two lines are used to find the shape segment
+% For an arbitrary shape, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')
     ind = find(th>=(obs.partition(:,1)) & th<=(obs.partition(:,2)),1);

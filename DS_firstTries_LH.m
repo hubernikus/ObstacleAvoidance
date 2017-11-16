@@ -25,7 +25,7 @@ if isempty(regexp(path,['Example_DSs' pathsep], 'once'))
 end
 
 % Set default simulation parameters
-opt_sim.dt = 0.02; %integration time steps
+opt_sim.dt = 0.01; %integration time steps
 opt_sim.i_max = 1000; %maximum number of iterations
 opt_sim.tol = 0.05; %convergence tolerance
 opt_sim.plot = true; %enabling the animation
@@ -245,27 +245,28 @@ fprintf('Start 2D-Simulation \n');
 fn_handle = @(x) linearStableDS(x);
 %x0 = randn(2,15)*10; % randomly distributed points
 N_samples = 20;
-phi0 = (1:N_samples)/N_samples*2*pi;
-r0 = 10;
-x0 = [r0* cos(phi0); r0*sin(phi0)];
+%y = -10:1:10;
+%x0 = [-10*ones(1,length(y)); y]; 
+y = 0;
+x0 = [-10*ones(1,length(y)); y]; 
 
 
 % Place obstacles
 obs = [];
 % obstacle 1
-obs{1}.a = [4 4;0.4 1];
-obs{1}.p = [2 1;1 1];
-obs{1}.partition = [-pi 0;0 pi];
+obs{1}.a = [1; 4];
+obs{1}.p = [1; 1];
+%obs{1}.partition = [-pi 0];
 obs{1}.x0 = [-6;1];
-obs{1}.sf = [1;1];
+obs{1}.sf = [1.1];
 obs{1}.th_r = 0*pi/180;
 % obstacle 2
-obs{2}.a = [2 2;0.4 1];
-obs{2}.p = [2 1;1 1];
-obs{2}.partition = [-pi 0;0 pi];
-obs{2}.x0 = [-5;-3];
-obs{2}.sf = [1.2;1.2];
-obs{2}.th_r = -90*pi/180;
+% obs{2}.a = [2 2;0.4 1];
+% obs{2}.p = [2 1;1 1];
+% obs{2}.partition = [-pi 0;0 pi];
+% obs{2}.x0 = [-5;-3];
+% obs{2}.sf = [1.2;1.2];
+% obs{2}.th_r = -90*pi/180;
 % % obstacle 3
 % obs{3}.a = [1.2 1.2;0.4 1];
 % obs{3}.p = [2 1;1 1];

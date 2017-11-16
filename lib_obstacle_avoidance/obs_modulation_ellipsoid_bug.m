@@ -78,7 +78,7 @@ N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
 
-xd = xd-xd_obs ; %computing the relative velocity with respect to the obstacle
+xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
 
 if d==3
     E = zeros(d,d+1,N);
@@ -152,7 +152,7 @@ end
 xd = xd + xd_obs ; %transforming back the velocity into the global coordinate system
 
 function [E Gamma] = compute_basis_matrix(d,x_t,obs)
-% For an arbitrary shap, the next two lines are used to find the shape segment
+% For an arbitrary shape, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')
     ind = find(th>=(obs.partition(:,1)) & th<=(obs.partition(:,2)),1);

@@ -168,7 +168,7 @@ fn_handle = @(x) linearStableDS(x);
 %r0 = 10;
 % x0 = [r0* cos(phi0); r0*sin(phi0)];
 x0 = [-10;0];
-x0 = [ones(1,21)*-10 ; -10:1:10];
+x0 = [ones(1,27)*-10 ; -13:1:13];
 
 
 % Place obstacles
@@ -176,7 +176,7 @@ obs = [];
 % obstacle 1
 obs{1}.a = [6;-1];
 obs{1}.p = [1;1];
-obs{1}.x0 = [-4;0];
+obs{1}.x0 = [-5;2];
 obs{1}.sf = [1.2;1.2];
 obs{1}.th_r = 90*pi/180;
 %obs{i}.partition = [];
@@ -208,10 +208,102 @@ Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 
 %xlim([-15 15]); ylim([-15 15])
 
-
-
 fprintf('End 2D-Simulation \n');
 
+%%
+%% Demo: 2D - multiple objects overlapping
+clc;
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+%x0 = randn(2,15)*10; % randomly distributed points
+N_samples = 20;
+%phi0 = (1:N_samples)/N_samples*2*pi;
+%r0 = 10;
+%x0 = [r0* cos(phi0); r0*sin(phi0)];
+x0 = [ones(1,15)*-8 ; -14:2:14];
+
+% Place obstacles
+obs = [];
+i = 1;
+% obs{i}.a = [1 1;3 3];
+% obs{i}.p = [1 1;1 1];
+% obs{i}.partition = [-pi 0;0 pi];
+% obs{i}.x0 = [-6;-5];
+% obs{i}.sf = [1.2;1.2];
+% obs{i}.th_r = 0*pi/180;
+% i = 2;
+obs{i}.a = [1;4];
+obs{i}.p = [1;1];
+%obs{i}.partition = [;0 pi];
+obs{i}.x0 = [-6;1];
+obs{i}.sf = [1.1;1.1];
+obs{i}.th_r = 0*pi/180;
+% % % obstacle 3
+% obs{3}.a = [1.2 1.2;0.4 1];
+% obs{3}.p = [2 1;1 1];
+% obs{3}.partition = [-pi 0;0 pi];
+% obs{3}.x0 = [-5;-1];
+% obs{3}.sf = [2;2];
+% obs{3}.th_r = 60*pi/180;
+
+
+% Start simulation
+opt_sim.obstacle = obs;
+
+fig(1) = figure('name','First demo: Streamlines of the original DS','position',[100 550 560 420]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+fprintf('End 2D-Simulation \n');
+
+%% Demo: 2D - multiple objects overlapping
+clc; %close all;
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+%x0 = randn(2,15)*10; % randomly distributed points
+N_samples = 20;
+%y = -10:1:10;
+%x0 = [-10*ones(1,length(y)); y]; 
+y = 0;
+x0 = [-10*ones(1,length(y)); y]; 
+
+
+% Place obstacles
+obs = [];
+% obstacle 1
+obs{1}.a = [1; 2];
+obs{1}.p = [1; 1];
+%obs{1}.partition = [-pi 0];
+obs{1}.x0 = [-6;1];
+obs{1}.sf = [1.1];
+obs{1}.th_r = 0*pi/180;
+obs{1}.perturbation.t0 = 0;
+obs{1}.perturbation.tf = 2;
+obs{1}.perturbation.dx = [0;-1];  
+% obstacle 2
+% obs{2}.a = [2 2;0.4 1];
+% obs{2}.p = [2 1;1 1];
+% obs{2}.partition = [-pi 0;0 pi];
+% obs{2}.x0 = [-5;-3];
+% obs{2}.sf = [1.2;1.2];
+% obs{2}.th_r = -90*pi/180;
+% % obstacle 3
+% obs{3}.a = [1.2 1.2;0.4 1];
+% obs{3}.p = [2 1;1 1];
+% obs{3}.partition = [-pi 0;0 pi];
+% obs{3}.x0 = [-5;-1];
+% obs{3}.sf = [2;2];
+% obs{3}.th_r = 60*pi/180;
+
+
+% Start simulation
+opt_sim.obstacle = obs;
+
+fig(1) = figure('name','First demo: Streamlines of the original DS','position',[100 550 560 420]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+fprintf('End 2D-Simulation \n');
 
 
 end
