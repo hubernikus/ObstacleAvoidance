@@ -79,6 +79,8 @@ d = size(x,1);
 Gamma = zeros(1,N);
 
 xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
+
+
 movingTowards = false;
 % Object moving towards me...
 if(sum(abs(xd_obs)))
@@ -103,7 +105,7 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
-    [E(:,:,n) Gamma(n)] = x(d,x_t,obs{n});
+    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
 end
 
 % [tmp, obs_order] = sort(Gamma,'descend');
@@ -130,7 +132,7 @@ for n = obs_order;
             D(1) = -1.0;
         end
     end
-    
+pp    
     M = (R(:,:,n)*E(:,:,n)*diag(D+1)/E(:,:,n)*R(:,:,n)')*M;
 end
 

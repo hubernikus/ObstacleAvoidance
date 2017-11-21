@@ -142,7 +142,7 @@ phi_c = (2*dirRotation-1)*pi - rotationVelocity;
 epsilon_v = 0.001; % velocity safety margin
 n_minDist = [cos(phi_minDist);sin(phi_minDist)]; % normal vector in direction of the minimal distance
 dist0 = 6;
-n_gain = 4; % > 1 --- Inverse default gain
+h_x0 = 4; % > 1 --- Inverse default gain
 d_phiVel = 0.1; % Angle margin, with which the object is avoided
 
 % COMMENT: Velocity rotation does not work, only based on the realtive
@@ -163,7 +163,7 @@ velTowardsBody = and((dirAngleDiff(phi_xd,phi_max(1))>0), ...
 % else
 %     h_x = 0;
 % end
-h_x = n_gain^(-1*min_dist/dist0)*velTowardsBody* ...
+h_x = h_x0^(-1*min_dist/dist0)*velTowardsBody* ...
                   abs(angleSubtraction(phi_max(2-dirRotation),phi_xd));
 % h_x = h_x % diplay h_x
 
