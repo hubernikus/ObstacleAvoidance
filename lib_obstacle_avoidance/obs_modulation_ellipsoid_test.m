@@ -1,6 +1,6 @@
-function [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,varargin)
+function [xd b_contour M] = obs_modulation_ellipsoid_test(x,xd,obs,b_contour,varargin)
 %
-% Obstacle avoidance module: Version 1.2, issued on July 30, 2015
+% Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%   Copyright (c) 2011 S. Mohammad Khansari-Zadeh, LASA Lab, EPFL,    %%%
@@ -78,8 +78,11 @@ N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
 
+xd_init = xd;
+
 xd_dx_obs = zeros(d,N);
 xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
+
 
 for i=1:length(varargin)
     if ~isempty(varargin)
@@ -100,8 +103,6 @@ for i=1:length(varargin)
         end
     end
 end
-
-
 
 if d==3
     E = zeros(d,d+1,N);
@@ -137,7 +138,19 @@ for n=1:N
     xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
                                        (xd_dx_obs(:,n) + xd_w_obs(:,n)); 
 end
+xd_obs = [0;-1];
 xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
+xd_rel_init = xd;
+
+
+movingTowards = false;
+% Object moving towards me...
+if(sum(abs(xd_obs)))
+    if(dot(xd_obs,x-obs{1}.x0)> 0)
+        movingTowards = true
+    end
+end
+
 
 %ordering the obstacle number so as the closest one will be considered at
 %last (i.e. higher priority)
@@ -179,7 +192,7 @@ end
 if b_contour==1
     contour_dir = sum(E(:,obs{n}.extra.ind,n),2); %extra.ind defines the desired eigenvalues to move along it
     contour_dir = contour_dir/norm(contour_dir);
-%     disp(xd'*E(:,1,n))
+    %disp(xd'*E(:,1,n))
    
     if (xd'*E(:,1,n)>0) %%(contour_dir'*M*xd >0 && norm(M*xd) > 0.05) || 
         b_contour = false;
@@ -197,6 +210,18 @@ else
 end
 
 xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
+xd_new = xd; 
+xd = 0;
+% Mirror if moving in wrong direction. 
+%movingTowards = true;
+if movingTowards
+    n_xdInit = xd_init/norm(xd_init); % unit vecotr in direction of initial velocity
+    delta_xd = xd_new-n_xdInit*dot(xd_new, n_xdInit);
+    if(dot(delta_xd, xd_obs) > 0) % modulation is in same direction as object velocity
+        xd = delta_xd;
+        
+    end
+end
 
 function [E Gamma] = compute_basis_matrix(d,x_t,obs)
 % For an arbitrary shap, the next two lines are used to find the shape segment

@@ -25,64 +25,21 @@ if isempty(regexp(path,['DynamicalSystems' pathsep], 'once'))
 end
 
 % Set default simulation parameters
-opt_sim.dt = 0.001; %integration time steps
-opt_sim.i_max = 2000; %maximum number of iterations
+opt_sim.dt = 0.005; %integration time steps
+opt_sim.i_max = 200; %maximum number of iterations
 opt_sim.tol = 0.05; %convergence tolerance
 opt_sim.plot = true; %enabling the animation
 opt_sim.model = 1; %first order ordinary differential equation
 opt_sim.obstacle = []; %no obstacle is defined
 
-%% Mehsgrids
-close all; clear variables
-
-obs1{1}.a = [6;1];
-obs1{1}.p = [1;1];
-obs1{1}.x0 = [-4;0];
-obs1{1}.sf = [1.2;1.2];
-obs1{1}.th_r = 90*pi/180;
-
-dim = 2; 
-N_x = 21; % Number of samples
-N_y = 21; 
-
-X = [];
-[X(:,:),Y(:,:)] = meshgrid(linspace(-10,0,N_x), linspace(-10,10,N_y));
-
-xd_hat = zeros(dim, N_x, N_y);
-xd = zeros(dim, N_x, N_y);
-
-xd_obs = [0;0]; % assumed to not mobe
-
-for ix = 1:N_x
-    for iy = 1:N_y
-        xd_hat(:,ix,iy) = linearStableDS([X(ix,iy);Y(ix,iy)]);
-        xd(:,ix,iy) = obs_modulation_rotation([X(ix,iy);Y(ix,iy)],xd_hat(:,ix,iy),obs1,xd_obs);
-    end
-end
-
-%
-[x_obs, x_obs_sf] = obs_draw_ellipsoid(obs1,50);
-
-
-
-figure('Position',[0 0 1000 1000]);
-patch(x_obs(1,:),x_obs(2,:),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]); hold on;
-plot(x_obs_sf(1,:),x_obs_sf(2,:),'k--','linewidth',0.5);
-quiver(X(:,:), Y(:,:), squeeze(xd_hat(1,:,:)), squeeze(xd_hat(2,:,:)), 'k'), hold on;
-quiver(X(:,:), Y(:,:), squeeze(xd(1,:,:)), squeeze(xd(2,:,:)), 'r')
-xlim([X(1,1),X(end,end)]);ylim([Y(1,1),Y(end,end)])
-
-print('fig/quiverPlot_DS_LS_object61','-depsc')
-
 
 %% Mehsgrids
 close all; % clear variables
 
-
 obs = [];
 obs1{1}.a = [6;1];
 obs1{1}.p = [1;1];
-obs1{1}.x0 = [-4;0];
+obs1{1}.x0 = [-4;1];
 obs1{1}.sf = [1.2;1.2];
 obs1{1}.th_r = 90*pi/180;
 n= 1;
@@ -110,30 +67,24 @@ for ix = 1:N_x
     for iy = 1:N_y
         xd_hat(:,ix,iy) = linearStableDS([X(ix,iy);Y(ix,iy)]);
         b_contour = 0;
-%       xd_ellips3(:,ix,iy) = obs_modulation_ellipsoid_test([X(ix,iy);Y(ix,iy)],xd_hat(:,ix,iy), obs1, b_contour, xd_obs);
         xd_ellips2(:,ix,iy) = obs_modulation_ellipsoid_adapted([X(ix,iy);Y(ix,iy)],xd_hat(:,ix,iy), obs1, b_contour, xd_obs);
         xd_ellips(:,ix,iy) = obs_modulation_ellipsoid([X(ix,iy);Y(ix,iy)],xd_hat(:,ix,iy), obs1, b_contour, xd_obs);
-        %xd(:,ix,iy) = obs_modulation_rotation([X(ix,iy);Y(ix,iy)],xd_hat(:,ix,iy),obs1,xd_obs);
     end
 end
 
-%
 [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs1,50);
-
 
 
 figure('Position',[0 0 1000 1000]);
 patch(x_obs(1,:),x_obs(2,:),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]); hold on;
 plot(x_obs_sf(1,:),x_obs_sf(2,:),'k--','linewidth',0.5);
 quiver(X(:,:), Y(:,:), squeeze(xd_hat(1,:,:)), squeeze(xd_hat(2,:,:)), 'k'), hold on;
-quiver(X(:,:), Y(:,:), squeeze(xd(1,:,:)), squeeze(xd(2,:,:)), 'r')
 quiver(X(:,:), Y(:,:), squeeze(xd_ellips(1,:,:)), squeeze(xd_ellips(2,:,:)), 'b')
 quiver(X(:,:), Y(:,:), squeeze(xd_ellips2(1,:,:)), squeeze(xd_ellips2(2,:,:)), 'g')
-%quiver(X(:,:), Y(:,:), squeeze(xd_ellips3(1,:,:)), squeeze(xd_ellips3(2,:,:)), 'r')
 xlim([X(1,1),X(end,end)]);ylim([Y(1,1),Y(end,end)])
-legend('','','Original System', 'Ellipse Modulation', 'Ellipse Modulation Adaptded')
+%legend('','','Original System', 'Ellipse Modulation', 'Ellipse Modulation Adaptded')
 
-print('fig/quiverPlot_DS_LS_object111','-depsc')
+print('fig/quiverPlot_DS_LS_circle_modulation','-depsc')
 
 
 %% Mehsgrids
@@ -144,11 +95,6 @@ obs1{1}.p = [1;1];
 obs1{1}.x0 = [-4;2];
 obs1{1}.sf = [1.2;1.2]; 
 obs1{1}.th_r = 45*pi/180;
-% obs1{2}.a = [6;1];
-% obs1{2}.p = [1;1];
-% obs1{2}.x0 = [-4;-2];
-% obs1{2}.sf = [1.2;1.2];
-% obs1{2}.th_r = 45*pi/180;
 
 dim = 2; 
 
@@ -183,31 +129,6 @@ quiver(X(:,:), Y(:,:), squeeze(xd(1,:,:)), squeeze(xd(2,:,:)), 'r')
 xlim([X(1,1),X(end,end)]);ylim([Y(1,1),Y(end,end)])
 
 print('fig/quiverPlot_DS_LS_object61','-depsc')
-
-%% Specific points
-%close all;
-
-x1 = [-8; 1];
-x2 = [-8; -1];
-x3 = [-7; 2];
-x4 = [-7; -2];
-
-xList = { x1, x2, x3, x4};
-
-xd = []; phi_c =[]; h_x = []; kappa = [];
-var_gen = []; 
-
-
-for ix = 1:4%length(xList}
-    x = xList{ix};
-    [xd_hat] = linearStableDS(x)
-    [xd(:,ix),phi_c(ix), h_x(ix), kappa(ix), var_gen(:,ix)] ...
-            = obs_modulation_rotation(x,xd_hat,obs1,xd_obs, true);
-end
-
-var_gen = var_gen
-
-plot(0,0,'ob'); hold on;
 
 
 
@@ -236,21 +157,6 @@ obs{1}.p = [1;1];
 obs{1}.x0 = [-5;0];
 obs{1}.sf = [1.2;1.2];
 obs{1}.th_r = 90*pi/180;
-%obs{i}.partition = [];
-% obs{1}.perturbation.t0 = 0;
-% obs{1}.perturbation.tf = 10;
-% obs{1}.perturbation.dx = [0;-1];  
-
-% obstacle 2
-% obs{2}.a = [6;1];
-% obs{2}.p = [1;1];
-% obs{2}.x0 = [-8;-3];
-% obs{2}.sf = [1.2;1.2];
-% obs{2}.th_r = 45*pi/180;
-% obs{2}.perturbation.t0 = 0;
-% obs{2}.perturbation.tf = 10;
-
-% obs{2}.perturbation.dx = [0;1];
 
 
 % Start simulation

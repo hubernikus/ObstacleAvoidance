@@ -1,4 +1,4 @@
-function [xd b_contour M] = obs_modulation_ellipsoid_adapted(x,xd,obs,b_contour,xd_obs)
+function [xd b_contour M] = obs_modulation_ellipsoid_adapted(x,xd,obs,b_contour,varargin)
 %
 % Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %
@@ -78,14 +78,29 @@ N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
 
-xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
+xd_init = xd;
+
+xd_dx_obs = zeros(d,N);
+xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
 
 
-movingTowards = false;
-% Object moving towards me...
-if(sum(abs(xd_obs)))
-    if(dot(xd_obs,x-obs{1}.x0)> 0)
-        movingTowards = true
+for i=1:length(varargin)
+    if ~isempty(varargin)
+        switch i
+            case 1
+                xd_dx_obs = varargin{1};
+            case 2
+                w_obs = varargin{2};
+                if d==2 && size(w_obs,1)==1 && size(w_obs,2)==N
+                    for n=1:N
+                        x_tmp = x-obs{n}.x0;
+                        xd_w_obs(:,n) = [-x_tmp(2);x_tmp(1)]*w_obs(n); %cross(w,x_tmp)
+                    end
+                end
+                if d==3 && length(w_obs)==d %supporting situation
+                    xd_w_obs = cross(w_obs,x_tmp);
+                end
+        end
     end
 end
 
@@ -106,34 +121,67 @@ for n=1:N
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
     [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
+%     if Gamma(n)<0.99
+%         disp(Gamma(n))
+%     end
 end
 
-% [tmp, obs_order] = sort(Gamma,'descend');
 w = compute_weights(Gamma,N);
-obs_order = 1:N;
 
+%adding the influence of the rotational and cartesian velocity of the
+%obstacle to the velocity of the robot
+xd_obs = 0;
+xd_obs = [0;-0.0001]; % REMOVE
+for n=1:N
+    if ~isfield(obs{n},'sigma')
+        obs{n}.sigma = 1;
+    end
+    xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
+                                       (xd_dx_obs(:,n) + xd_w_obs(:,n)); 
+end
+
+
+xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
+xd_init_rel = xd;
+
+
+movingTowards = false;
+% Object moving towards me...
+if(sum(abs(xd_obs)))
+    if(dot(xd_obs,x-obs{1}.x0)< 0)
+        movingTowards = true;
+    end
+end
+
+
+%ordering the obstacle number so as the closest one will be considered at
+%last (i.e. higher priority)
+[~,obs_order] = sort(Gamma,'descend');
 for n = obs_order;
     if isfield(obs{n},'rho')
         rho = obs{n}.rho;
     else
         rho = 1;
     end
-    D = w(n)*([-1;ones(size(E,2)-1,1)]/abs(Gamma(n))^(1/rho));
-    
+    if isfield(obs{n},'eigenvalue')
+        d0 = obs{n}.eigenvalue;
+    else
+        d0 = ones(size(E,2)-1,1);
+    end
+        
+    D = w(n)*([-1;d0]/abs(Gamma(n))^(1/rho));
     if isfield(obs{n},'tailEffect') && ~obs{n}.tailEffect && xd'*R(:,:,n)*E(:,1,n)>=0 %the obstacle is already passed, no need to do anything
         D(1) = 0.0;
     end
     
     if D(1) < -1.0
-        D(2:end) = 1.0;
+        D(2:end) = d0;
         if xd'*R(:,:,n)*E(:,1,n) < 0
-            D(1) = -1.0;
-        else
             D(1) = -1.0;
         end
     end
-pp    
-    M = (R(:,:,n)*E(:,:,n)*diag(D+1)/E(:,:,n)*R(:,:,n)')*M;
+    
+    M = (R(:,:,n)*E(:,:,n)*diag(D+[1;d0])/E(:,:,n)*R(:,:,n)')*M;
 end
 
 E(:,:,n) = R(:,:,n)*E(:,:,n); %transforming the basis vector into the global coordinate system
@@ -146,28 +194,65 @@ end
 if b_contour==1
     contour_dir = sum(E(:,obs{n}.extra.ind,n),2); %extra.ind defines the desired eigenvalues to move along it
     contour_dir = contour_dir/norm(contour_dir);
+    %disp(xd'*E(:,1,n))
    
-    if (contour_dir'*M*xd >0 && norm(M*xd) > 0.05) || (xd'*E(:,1,n)>0)
+    if (xd'*E(:,1,n)>0) %%(contour_dir'*M*xd >0 && norm(M*xd) > 0.05) || 
         b_contour = false;
         xd = M*xd; %velocity modulation
         disp('Contouring stopped.')
     else
-        xd = obs{n}.extra.C_Amp*contour_dir; %extra.C_Amp is the desired amplitude of movement along the controuring direction
+        %xd = obs{n}.extra.C_Amp*contour_dir; %extra.C_Amp is the desired amplitude of movement along the controuring direction
+        xd = norm(xd)*contour_dir; 
     end
 else
-    if movingTowards
-        if(dot(M*xd+xd_obs,xd_obs) > 0) % Moving opposite the object
-            fprintf('opposit dir \n')
-            xd = M'*xd;
-            M = M
-        else
-            xd = M*xd; %velocity modulation
-        end
+    xd = M*xd; %velocity modulation
+%     if norm(M*xd)>0.05
+%         xd = norm(xd)/norm(M*xd)*M*xd; %velocity modulation
+%     end
+end
+
+% xd_new = xd;
+% if movingTowards
+%     n_xdInit = xd_init_rel/norm(xd_init_rel); % unit vecotr in direction of initial velocity
+%     delta_xd = xd_new-n_xdInit*dot(xd_new, n_xdInit);
+%     if(dot(delta_xd, xd_obs) > 0) % modulation is in same direction as object velocity
+%         xd = xd_new - 2* delta_xd;
+%     end
+% end
+
+xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
+
+
+%xd = 0;
+% Mirror if moving in wrong direction. 
+% %movingTowards = true;
+% if movingTowards
+%     n_xdInit = xd_init/norm(xd_init); % unit vecotr in direction of initial velocity
+%     delta_xd = xd_new-n_xdInit*dot(xd_new, n_xdInit);
+%     if(dot(delta_xd, xd_obs) > 0) % modulation is in same direction as object velocity
+%         xd = xd_new - 2* delta_xd;
+%     end
+% end
+
+
+% Mirror at NORMAL  if moving in wrong direction. 
+%movingTowards = true;
+if movingTowards
+    [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
+    [~,n_minDist] = findMinDistance(x_obs_sf, x);
+    
+    %n_xdInit = xd_init/norm(xd_init); % unit vecotr in direction of initial velocity
+    delta_xd = xd-n_minDist*dot(xd, n_minDist);
+    
+    if(dot(delta_xd, xd_obs) > 0) % modulation is in same direction as object velocity
+        xd = xd - 2* delta_xd;
     end
 end
 
+end
+
 function [E Gamma] = compute_basis_matrix(d,x_t,obs)
-% For an arbitrary shape, the next two lines are used to find the shape segment
+% For an arbitrary shap, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')
     ind = find(th>=(obs.partition(:,1)) & th<=(obs.partition(:,2)),1);
@@ -182,7 +267,7 @@ end
 p = obs.p(:,ind);
 Gamma = sum((x_t./a).^(2*p));
 
-nv = (2*p.*(x_t./a).^(2*p - 1))./a; %normal vector of the tangential hyper-plane
+nv = (2*p./a.*(x_t./a).^(2*p - 1)); %normal vector of the tangential hyper-plane
 
 %generating E, for a 2D model it simply is: E = [dx [-dx(2);dx(1)]];
 E = zeros(d,d);
@@ -192,6 +277,7 @@ E(2:d,2:d) = -eye(d-1)*nv(1);
 
 if d == 3
     E(:,end+1) = [0;-nv(3);nv(2)];
+end
 end
 
 
@@ -205,6 +291,7 @@ for i=1:N
     w(i) = prod(Gamma(ind)./(Gamma(i)+Gamma(ind)));
 end
 
+end
 
 function R = compute_R(d,th_r)
 % rotating the query point into the obstacle frame of reference
@@ -218,4 +305,18 @@ elseif d == 3
     R = R_x*R_y*R_z;
 else %rotation is not yet supported for d > 3
     R = eye(d);
+end
+
+end
+
+%% NEW functions
+function [min_dist,n_minDist] = findMinDistance(x_obs_sf, refPoint)
+% find the minimum distance and correpsonding angle
+    [min_dist, indMin] = min(sum((x_obs_sf-refPoint).^2,1),[],2);
+    
+    % Eucledian distance
+    min_dist = sqrt(min_dist);
+    
+    n_minDist = [x_obs_sf(1,indMin)-refPoint(1);x_obs_sf(2,indMin)-refPoint(2)];
+    n_minDist = n_minDist/norm(n_minDist);
 end

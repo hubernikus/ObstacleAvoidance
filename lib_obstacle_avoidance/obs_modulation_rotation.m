@@ -87,19 +87,38 @@ if(N>1)
 end
 
 if(d~=2)
-    warning('Module only for 2D')
+    warning('Module only for 2D');
 end
 
 xd = xd-xd_obs; %computing the relative velocity with respect to ALL obstacle
 
-n = 1; 
-virtObs{1} = obs{1};
-[x_obs, x_obs_sf] = obs_draw_ellipsoid(virtObs,50); 
 
+if plotFigure
+    % Illustaration remove
+    [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
+    figure(11);
+    for n = 1:length(obs)
+        patch(x_obs(1,:,1),x_obs(2,:,n),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]); hold on;
+        patch(x_obs(1,:,n),x_obs(2,:,n),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]); hold on;
+        plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
+        plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
+    end
+end
+
+x_obs = []; x_obs_sf = [];
+x0_obs = 0;
+for n = 1:length(obs)
+    %n = 1; 
+    virtObs{1} = obs{n};
+    x0_obs = x0_obs + 1/length(obs)*obs{n}.x0;
+    [x_obs_temp, x_obs_sf_temp] = obs_draw_ellipsoid(virtObs,50);
+    x_obs = [x_obs,x_obs_temp];
+    x_obs_sf = [x_obs_sf,x_obs_sf_temp];
+end
 % COMMENT: smallest deviation not good idea, as it does not converge
 % already for simple system ( smallest rotation mode..)
 % 2nd try: stay on CM of object
-[phi_max, phi_mid, deltaPhi, phi_CM] = findMaxAngle(virtObs{1}.x0, x_obs_sf, x);
+[phi_max, phi_mid, deltaPhi, phi_CM] = findMaxAngle(x0_obs, x_obs_sf, x);
 
 [min_dist, phi_minDist] = findMinDistance(x_obs_sf, x);   
 
@@ -108,41 +127,46 @@ phi_xd = atan2(xd(2),xd(1)); % direction of the TI DS
 if plotFigure
     % Illustaration remove
     figure(11);
-    patch(x_obs(1,:,n),x_obs(2,:,n),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]);
-    hold on;
-    plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
-
-    lineLength = 10;
+    lineLength = 5;
     plot(x(1),x(2), 'rx')
     plotLine(x, phi_max(1), lineLength)
     plotLine(x, phi_max(2), lineLength)
-    plotLine(x, phi_mid, lineLength)
+    plotLine(x, phi_mid, lineLength, 'c')
     plotLine(x, phi_CM, lineLength,'y')
     plotLine(x, phi_minDist, min_dist,'g')
-    plotLine(x, phi_xd, min_dist,'b')
-    
+    %plotLine(x, phi_xd, lineLength*4,'r','Initial DS')
 end
 
+if deltaPhi > pi % no continious transition convex-concave... Adapt..
+    phi_cent = phi_CM ;
+    dist0 = 5;
+else
+    phi_cent = phi_mid;
+    dist0 = 20;
+end
 
 % Find direction of minimal rotation -> least rotation of the velocity
 %[~,indMinDir] = min(abs(dirAngleDiff(phi_xd,phi_max)));
 %dirRotation = dirAngleDiff(phi_max(indMinDir),phi_xd); 
-dirRotation = (dirAngleDiff(phi_xd, phi_CM) > 0 );
-
+%dirRotation = (dirAngleDiff(phi_xd, phi_CM) > 0 );
+dirRotation = (dirAngleDiff(phi_xd, phi_cent) > 0 );
 
 % Angle the velocity is already rotated in the direction of closest exit
 %rotationVelocity = dirAngleDiff(phi_xd,phi_mid); 
-rotationVelocity = dirAngleDiff(phi_xd,phi_CM); 
+%rotationVelocity = dirAngleDiff(phi_xd,phi_CM); 
+rotationVelocity = dirAngleDiff(phi_xd, phi_cent); 
 
 % Maximum rotation angle (limits over rotation > zick-zack)
-phi_c = (2*dirRotation-1)*pi - rotationVelocity;
+phi_c = (2*dirRotation-1)*pi - rotationVelocity
 
 %
 % Relative Magnitude of Rotation --- h_r
 epsilon_v = 0.001; % velocity safety margin
 n_minDist = [cos(phi_minDist);sin(phi_minDist)]; % normal vector in direction of the minimal distance
-dist0 = 6;
+%dist0 = 4;
 h_x0 = 4; % > 1 --- Inverse default gain
+n_hx = 1;
+n_phi = 1;
 d_phiVel = 0.1; % Angle margin, with which the object is avoided
 
 % COMMENT: Velocity rotation does not work, only based on the realtive
@@ -163,9 +187,10 @@ velTowardsBody = and((dirAngleDiff(phi_xd,phi_max(1))>0), ...
 % else
 %     h_x = 0;
 % end
-h_x = h_x0^(-1*min_dist/dist0)*velTowardsBody* ...
-                  abs(angleSubtraction(phi_max(2-dirRotation),phi_xd));
-% h_x = h_x % diplay h_x
+%h_x = velTowardsBody*h_x0^((-min_dist/dist0)^n_hx*...
+%                  abs(angleSubtraction(phi_max(2-dirRotation),phi_xd)))
+h_x = velTowardsBody*h_x0^((-min_dist/dist0)^n_hx*...
+                  abs(angleSubtraction(phi_max(2-dirRotation),phi_xd)))
 
 %
 % Rotation Matrix --- R
@@ -174,15 +199,15 @@ R = compute_R(2,phi_c*h_x);
 %
 % Change in speed --- kappa = (1+kappa_old)
 kappa0 = 2; % default gain
-phi0 = pi; % no bais if =pi, otherwise towards one side
+phi0 = pi; % no bais if = pi, otherwise towards one side
 d0 = 1; % reference distance, the bigger the stronge the distance effect
 nd = 1; % distance exponent, the bigger, the stronger the distance effect
 
-kappa = kappa0 ^ ((2*pi-deltaPhi)/phi0 * (d0/d)^nd);
+kappa = kappa0 ^ ((pi-deltaPhi)/phi0 * (d0/d)^nd)
 %kappa = 1;
 M = kappa*R;
 
-if plotFigure; plot([x(1),x(1)+xd(1)],[x(2),x(2)+xd(2)],'r'); end
+if plotFigure; plot([x(1),x(1)+1.1*xd(1)],[x(2),x(2)+1.1*xd(2)],'b'); end
 
 xd = M*xd; % velocity modulation
 
@@ -192,13 +217,16 @@ xd = xd + xd_obs ; % transforming back the velocity into the global coordinate s
 
 end
 
-function plotLine(x0, phi, d,col)
+function plotLine(x0, phi, d,col, name)
     if nargin>3
-        plot([x0(1),x0(1)+d*cos(phi)],[x0(2), x0(2)+d*sin(phi)], '--','Color', col)
+        if nargin > 4
+            plot([x0(1),x0(1)+d*cos(phi)],[x0(2), x0(2)+d*sin(phi)], '--','Color', col, 'DisplayName', name)
+        else
+            plot([x0(1),x0(1)+d*cos(phi)],[x0(2), x0(2)+d*sin(phi)], '--','Color', col)
+        end
     else
         plot([x0(1),x0(1)+d*cos(phi)],[x0(2), x0(2)+d*sin(phi)], 'k--')
     end
-    
 end
 
 
@@ -278,27 +306,32 @@ function [phi_max, phi_mean, delta_phi, phi_CM] = findMaxAngle(x_obs_ref, x_obs_
     phi = atan2(x_obs_sf(2,:)-refPoint(2),x_obs_sf(1,:)-refPoint(1));
 
     % Find largest gap -> there is the opening of concave/convex object
-    % sort points according to phi
-    phi_sort = zeros(1,length(phi));
-    phi_rest = phi; % remaining items
+    phi_rest = phi; % remaining items, remove one item after other and put into sortet list
     
-    [phi_sort(1),ind_min] = min(phi_rest);
-    phi_rest(ind_min) = [];
+%     % sort points according to phi
+%     phi_sort = zeros(1,length(phi));
+%     
+%     
+%     [phi_sort(1),ind_min] = min(phi_rest);
+%     phi_rest(ind_min) = []; % Delete corresponding item in 'rest'-list
+%     
+%     for n = 2:length(phi)-1
+%         for i = 2:length(phi_rest)
+%             % Normal subtraction, cause minimal angle was startet with
+%             nextAngle = phi_rest(1)-phi_sort(n); 
+%             ind_next = 1;
+%             if(nextAngle > phi_rest(i)-phi_sort(n))
+%                 nextAngle(i) = phi_rest(i)-phi_sort(n);
+%                 ind_next = i;
+%             end
+%         end
+%         phi_sort(n) = phi_rest(ind_next);
+%         phi_rest(ind_next) = [];
+%     end
+%     phi_sort(end) = phi_rest; 
     
-    for n = 2:length(phi)-1
-        for i = 2:length(phi_rest)
-            % Normal subtraction, cause minimal angle was startet with
-            nextAngle = phi_rest(1)-phi_sort(n); 
-            ind_next = 1;
-            if(nextAngle > phi_rest(i)-phi_sort(n))
-                nextAngle(i) = phi_rest(i)-phi_sort(n);
-                ind_next = i;
-            end
-        end
-        phi_sort(n) = phi_rest(ind_next);
-        phi_rest(ind_next) = [];
-    end
-    phi_sort(end) = phi_rest; 
+    [phi_sort, ~] = sort(phi);
+    
     lastAngle = angleSubtraction360(phi_sort(1),phi_sort(end));
     deltaPhi = [phi_sort(2:end)-phi_sort(1:end-1), lastAngle];
                         
@@ -309,7 +342,7 @@ function [phi_max, phi_mean, delta_phi, phi_CM] = findMaxAngle(x_obs_ref, x_obs_
         
     phiCentered = angleSubtraction(phi,phi_mean);
     phi_max = [min(phiCentered), max(phiCentered)];
-    delta_phi = angleSubtraction(phi_max(2), phi_max(1));
+    delta_phi = angleSubtraction360(phi_max(1), phi_max(2)); % how indicies!!!!
     
     phi_max = addAngle(phi_max, phi_mean); % return in original reference frame
 end

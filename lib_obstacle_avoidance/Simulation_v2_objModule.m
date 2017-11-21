@@ -5,8 +5,8 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 % systems:
 %                               xd=f(x)
 %
-% wherbitrary d dimensional variable, and xd is its first time
-% derivative.re x is an a
+% where x is an arbitrary d dimensional variable, and xd is its first time
+% derivative.
 %
 % The function can be called using:
 %       [x xd t]=Simulation(x0,xT,Priors,Mu,Sigma)
@@ -31,7 +31,7 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 %       - .plot     setting simulation graphic on (true) or off (false) [default: true]
 %       - .tol:     A positive scalar defining the threshold to stop the
 %                   simulator. If the motions velocity becomes less than
-%                   tol, then simulation stop5 [default: 0.001]
+%                   tol, then simulation stops [default: 0.001]
 %       - .perturbation: a structure to apply pertorbations to the robot.
 %                        This variable has the following subvariables:
 %       - .perturbation.type: A string defining the type of perturbations.
@@ -44,7 +44,7 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 %                             perturbation should be applied.
 %       - .perturbation.tf:   A positive scalar defining the final time for
 %                             the perturbations. This variable is necessary
-%                      70       only when the type is set to 'tcp' or 'rcp'.
+%                             only when the type is set to 'tcp' or 'rcp'.
 %       - .perturbation.dx:   A d x 1 vector defining the perturbation's
 %                             magnitude. In 'tdp' and 'rdp', it simply
 %                             means a relative displacement of the
@@ -85,13 +85,6 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 %
 % Please send your feedbacks or questions to:
 %                           mohammad.khansari_at_epfl.ch
-
-% Additional variable - introduce in funciton header
-%figShow = 'off' % either 'on' or 'off'
-figSave = false
-figName = get(gcf,'Name');
-DynamicalSystems = sprintf(strcat('fig/',figName,'.gif'));
-
 
 %% parsing inputs
 if isempty(varargin)
@@ -181,7 +174,7 @@ if options.plot %plotting options
     end
 end
 %% Simulation
-i=1; % simulation iteration variable
+i=1;
 while true
     %Finding xd using fn_handle.
     if options.timeDependent
@@ -198,36 +191,32 @@ while true
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % This part if for the obstacle avoidance module
     if obs_bool
+        xd_obs = zeros(d,nbSPoint);
         % applying perturbation on the obstacles
-        for n=1:length(obs) 
+        for n=1:length(obs)
             if isfield(obs{n},'perturbation')
                 if i >= round(obs{n}.perturbation.t0/options.dt)+1 && i <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
                     x_obs{n}(:,end+1) = x_obs{n}(:,end) + obs{n}.perturbation.dx*options.dt;
                     obs{n}.x0 = x_obs{n}(:,end);
-                    xd_obs = obs{n}.perturbation.dx; % all velocities ????
+                    xd_obs(:,n) = obs{n}.perturbation.dx;
                     if options.plot %plotting options
                         plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt);
                     end
                 else
                     x_obs{n}(:,end+1) = x_obs{n}(:,end);
-                    xd_obs = 0;
                 end
-            else
-                xd_obs = 0;
             end
         end
         
-        for j=1:nbSPoint % j - iteration over number of starting points
-           %[xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
-           [xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid_adapted(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
-           %xd(:,i,j) = obs_modulation_rotation(x(:,i,j),xd(:,i,j),obs,xd_obs);
+        for j=1:nbSPoint
+            [xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
         end
 
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Integration
-        
+    
     if options.model == 2; %2nd order
         x(d+1:2*d,i+1,:)=x(d+1:2*d,i,:)+xd(:,i,:)*options.dt;
         x(1:d,i+1,:)=x(1:d,i,:)+x(d+1:2*d,i,:)*options.dt;
@@ -307,26 +296,10 @@ while true
         end
         break
     end
-    
-    if(figSave) % write to file
-        frame = getframe(sp.fig); 
-        im = frame2im(frame); 
-        [imind,cm] = rgb2ind(im,256); 
-        % Write to the GIF File 
-        if i == 1 
-          imwrite(imind,cm,filename,'gif', 'Loopcount',Inf,'DelayTime',1); 
-        else 
-          imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05);        end 
-        
-    end
-
-     
     i=i+1;
-    
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 function options = check_options(varargin)
 if ~isempty(varargin)
     options = varargin{1};
@@ -368,6 +341,7 @@ else
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function sp = plot_results(mode,sp,x,xT,varargin)
 if isempty(varargin) || isempty(varargin{1})
     b_obs = false;
@@ -386,19 +360,18 @@ switch mode
             end
             sp.axis = gca;
             hold on
-            sp.xT = plot(xT(1),xT(2),'k*','markersize',10,'linewidth',1.5);
-            sp.xT_l = plot(xT(1),xT(2),'k--','linewidth',1.5);
+            sp.xT = plot(xT(1),xT(2),'k*','EraseMode','none','markersize',10,'linewidth',1.5);
+            sp.xT_l = plot(xT(1),xT(2),'k--','EraseMode','none','linewidth',1.5);
             for j=1:nbSPoint
                 plot(x(1,1,j),x(2,1,j),'ok','markersize',2,'linewidth',7.5)
-                %sp.x(j)= plot(x(1,1,j),x(2,1,j),'EraseMode','none');!!!DELeTE
-                sp.x(j)= plot(x(1,1,j),x(2,1,j));
+                sp.x(j)= plot(x(1,1,j),x(2,1,j),'EraseMode','none');
             end
             xlabel('$\xi_1$','interpreter','latex','fontsize',16);
             ylabel('$\xi_2$','interpreter','latex','fontsize',16);
             grid on;box on
             
             if b_obs
-                [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,40);
+                [x_obs x_obs_sf] = obs_draw_ellipsoid(obs,40);
                 for n=1:size(x_obs,3)
                     sp.obs(n) = patch(x_obs(1,:,n),x_obs(2,:,n),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]);
                     sp.obs_sf(n) = plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
@@ -412,14 +385,11 @@ switch mode
             end
             sp.axis = gca;
             hold on
-            %sp.xT = plot3(xT(1),xT(2),xT(3),'k*','EraseMode','none','markersize',10,'linewidth',1.5);!!!DELeTE
-            %sp.xT_l = plot3(xT(1),xT(2),xT(3),'k--','EraseMode','none','linewidth',1.5);!!!DELeTE
-            sp.xT = plot3(xT(1),xT(2),xT(3),'k*','markersize',10,'linewidth',1.5);
-            sp.xT_l = plot3(xT(1),xT(2),xT(3),'k--','linewidth',1.5);
+            sp.xT = plot3(xT(1),xT(2),xT(3),'k*','EraseMode','none','markersize',10,'linewidth',1.5);
+            sp.xT_l = plot3(xT(1),xT(2),xT(3),'k--','EraseMode','none','linewidth',1.5);
             for j=1:nbSPoint
                 plot3(x(1,1,j),x(2,1,j),x(3,1,j),'ok','markersize',2,'linewidth',7.5)
-                %sp.x(j)= plot3(x(1,1,j),x(2,1,j),x(3,1,j),'EraseMode','none');!!!DELeTE
-                sp.x(j)= plot3(x(1,1,j),x(2,1,j),x(3,1,j));
+                sp.x(j)= plot3(x(1,1,j),x(2,1,j),x(3,1,j),'EraseMode','none');
             end
             
             if b_obs
@@ -445,14 +415,11 @@ switch mode
             for i=2:d
                 sp.axis(i-1)=subplot(d-1,1,i-1);
                 hold on
-                %sp.xT(i-1) = plot(xT(1),xT(i),'k*','EraseMode','none','markersize',10,'linewidth',1.5);!!! DELETE
-                %sp.xT_l(i-1) =                 %plot(xT(1),xT(i),'k--','EraseMode','none','linewidth',1.5); !!! DELETE
-                sp.xT(i-1) = plot(xT(1),xT(i),'k*','markersize',10,'linewidth',1.5);
-                sp.xT_l(i-1) = plot(xT(1),xT(i),'k--','linewidth',1.5);
+                sp.xT(i-1) = plot(xT(1),xT(i),'k*','EraseMode','none','markersize',10,'linewidth',1.5);
+                sp.xT_l(i-1) = plot(xT(1),xT(i),'k--','EraseMode','none','linewidth',1.5);
                 for j=1:nbSPoint
                     plot(x(1,1,j),x(i,1,j),'ok','markersize',2,'linewidth',7.5);
-                    %sp.x(i-1,j)= plot(x(1,1,j),x(i,1,j),'EraseMode','none'); !!! DELETE
-                    sp.x(i-1,j)= plot(x(1,1,j),x(i,1,j));
+                    sp.x(i-1,j)= plot(x(1,1,j),x(i,1,j),'EraseMode','none');
                 end
                 ylabel(['$\xi_' num2str(i) '$'],'interpreter','latex','fontsize',12);
                 grid on
@@ -599,10 +566,8 @@ switch mode
                 ax=get(sp.axis(i));
                 axis(sp.axis(i),...
                     [ax.XLim(1)-(ax.XLim(2)-ax.XLim(1))/10 ax.XLim(2)+(ax.XLim(2)-ax.XLim(1))/10 ...
-                     ax.YLim(1)-(ax.YLim(2)-ax.YLim(1))/10 ax.YLi   m(2)+(ax.YLim(2)-ax.YLim(1))/10]);
+                     ax.YLim(1)-(ax.YLim(2)-ax.YLim(1))/10 ax.YLim(2)+(ax.YLim(2)-ax.YLim(1))/10]);
             end
         end
-        
-    %createGif(sp.fig, 'testFigure)
 end
 drawnow
