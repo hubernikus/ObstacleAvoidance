@@ -157,7 +157,7 @@ dirRotation = (dirAngleDiff(phi_xd, phi_cent) > 0 );
 rotationVelocity = dirAngleDiff(phi_xd, phi_cent); 
 
 % Maximum rotation angle (limits over rotation > zick-zack)
-phi_c = (2*dirRotation-1)*pi - rotationVelocity
+phi_c = (2*dirRotation-1)*pi - rotationVelocity;
 
 %
 % Relative Magnitude of Rotation --- h_r
@@ -190,7 +190,7 @@ velTowardsBody = and((dirAngleDiff(phi_xd,phi_max(1))>0), ...
 %h_x = velTowardsBody*h_x0^((-min_dist/dist0)^n_hx*...
 %                  abs(angleSubtraction(phi_max(2-dirRotation),phi_xd)))
 h_x = velTowardsBody*h_x0^((-min_dist/dist0)^n_hx*...
-                  abs(angleSubtraction(phi_max(2-dirRotation),phi_xd)))
+                  abs(angleSubtraction(phi_max(2-dirRotation),phi_xd)));
 
 %
 % Rotation Matrix --- R
@@ -203,7 +203,7 @@ phi0 = pi; % no bais if = pi, otherwise towards one side
 d0 = 1; % reference distance, the bigger the stronge the distance effect
 nd = 1; % distance exponent, the bigger, the stronger the distance effect
 
-kappa = kappa0 ^ ((pi-deltaPhi)/phi0 * (d0/d)^nd)
+kappa = kappa0 ^ ((pi-deltaPhi)/phi0 * (d0/d)^nd);
 %kappa = 1;
 M = kappa*R;
 

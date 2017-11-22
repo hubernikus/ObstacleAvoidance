@@ -131,7 +131,7 @@ w = compute_weights(Gamma,N);
 %adding the influence of the rotational and cartesian velocity of the
 %obstacle to the velocity of the robot
 xd_obs = 0;
-xd_obs = [0;-0.0001]; % REMOVE
+%xd_obs = [0;-0.0001]; % REMOVE
 for n=1:N
     if ~isfield(obs{n},'sigma')
         obs{n}.sigma = 1;
@@ -141,17 +141,39 @@ for n=1:N
 end
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% COMMENT: smallest deviation not good idea, as it does not converge
+[x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
+    
+% already for simple system ( smallest rotation mode..)
+% 2nd try: stay on CM of object
+[phi_max, phi_mid, deltaPhi, phi_CM] = findMaxAngle(x_obs, x_obs_sf, x);
+
+phi_xd = atan2(xd(2),xd(1)); % direction of the TI DS
+
+% % Check eter point is moving towards object: 1 if attacking body, 0 if
+% going away
+velTowardsBody = and((dirAngleDiff(phi_xd,phi_max(1))>0), ...
+                        (dirAngleDiff(phi_max(2),phi_xd)>0));
+                    
+movingTowards = false;
+% Object moving towards me...
+if(sum(abs(xd_obs)))
+    if(dot(xd_obs,x-obs{1}.x0)< 0) % Obstacle is moving towards me
+        %if(dot(xd, x-obs{1}.x0) < 0) % Point is moving towards object
+        if velTowardsBody
+            movingTowards = true;
+        end
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
 xd_init_rel = xd;
 
 
-movingTowards = false;
-% Object moving towards me...
-if(sum(abs(xd_obs)))
-    if(dot(xd_obs,x-obs{1}.x0)< 0)
-        movingTowards = true;
-    end
-end
+
 
 
 %ordering the obstacle number so as the closest one will be considered at
@@ -238,7 +260,7 @@ xd = xd + xd_obs; %transforming back the velocity into the global coordinate sys
 % Mirror at NORMAL  if moving in wrong direction. 
 %movingTowards = true;
 if movingTowards
-    [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
+
     [~,n_minDist] = findMinDistance(x_obs_sf, x);
     
     %n_xdInit = xd_init/norm(xd_init); % unit vecotr in direction of initial velocity
@@ -319,4 +341,73 @@ function [min_dist,n_minDist] = findMinDistance(x_obs_sf, refPoint)
     
     n_minDist = [x_obs_sf(1,indMin)-refPoint(1);x_obs_sf(2,indMin)-refPoint(2)];
     n_minDist = n_minDist/norm(n_minDist);
+end
+
+function [phi_max, phi_mean, delta_phi, phi_CM] = findMaxAngle(x_obs_ref, x_obs_sf, refPoint)
+% find the most extreme angles
+% if phi_mid < 0 -> concave
+    phi_CM = atan2(x_obs_ref(2)-refPoint(2),x_obs_ref(1)-refPoint(1));
+    
+    phi = atan2(x_obs_sf(2,:)-refPoint(2),x_obs_sf(1,:)-refPoint(1));
+
+    % Find largest gap -> there is the opening of concave/convex object
+    [phi_sort, ~] = sort(phi);
+    
+    lastAngle = angleSubtraction360(phi_sort(1),phi_sort(end));
+    deltaPhi = [phi_sort(2:end)-phi_sort(1:end-1), lastAngle];
+                        
+    [valMax,indMax] = max(deltaPhi);
+    
+    % vis-a-vis of the largest opening is the center of the object
+    phi_mean = addAngle(phi_sort(indMax)+0.5*valMax+pi); 
+        
+    phiCentered = angleSubtraction(phi,phi_mean);
+    phi_max = [min(phiCentered), max(phiCentered)];
+    delta_phi = angleSubtraction360(phi_max(1), phi_max(2)); % how indicies!!!!
+    
+    phi_max = addAngle(phi_max, phi_mean); % return in original reference frame
+end
+
+function dPhi = angleSubtraction360(alpha, beta)
+% subtracts two angles, range into range between 0 to 2pi
+    dPhi = alpha-beta;
+    dPhi = dPhi+(dPhi<0)*2*pi;
+end
+
+function dPhi = angleSubtraction(alpha, beta)
+% subtracts to angles intor range -pi to pi
+    dPhi = alpha-beta;
+    dPhi = dPhi+(dPhi<-pi)*2*pi-(dPhi>pi)*2*pi;
+end
+
+
+function dPhi = addAngle(alpha, beta)
+% subtracts to angles and 
+    if nargin<2 beta=0; end
+   
+    dPhi = alpha+beta;
+    while(or(dPhi > pi, dPhi < - pi))
+        dPhi = dPhi+(dPhi<-pi)*2*pi-(dPhi>pi)*2*pi;
+    end
+end
+
+function dPhi = angleDiff(alpha, beta)
+% Caluclates the minimal difference between the angles
+
+% Enable scalar & vector compability
+Na = legnth(alpha);
+Nb = length(beta);
+if(and(Na>1,Nb>1, Na~=Nb))
+    error('Dimension missmatch')
+end
+
+end
+
+function dPhi = dirAngleDiff(alpha, beta)
+% Caluclates the minimal difference between the angles including sign!
+% negative -> beta in direction counterclock of alpha
+% positive -> alpha in direction counterclock of beta
+    diff = alpha-beta;
+    dPhi = diff +  2*pi*(diff<-pi) - 2*pi*(diff > pi);
+
 end

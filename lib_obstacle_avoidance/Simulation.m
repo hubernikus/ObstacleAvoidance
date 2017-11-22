@@ -88,9 +88,9 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 
 % Additional variable - introduce in funciton header
 %figShow = 'off' % either 'on' or 'off'
-figSave = false
+figSave = true
 figName = get(gcf,'Name');
-DynamicalSystems = sprintf(strcat('fig/',figName,'.gif'));
+filename = sprintf(strcat('animations/',figName,'.gif'));
 
 
 %% parsing inputs
@@ -219,8 +219,8 @@ while true
         
         for j=1:nbSPoint % j - iteration over number of starting points
            %[xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
-           [xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid_adapted(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
-           %xd(:,i,j) = obs_modulation_rotation(x(:,i,j),xd(:,i,j),obs,xd_obs);
+           %[xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid_adapted(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
+           xd(:,i,j) = obs_modulation_rotation(x(:,i,j),xd(:,i,j),obs,xd_obs);
         end
 
     end
@@ -316,12 +316,10 @@ while true
         if i == 1 
           imwrite(imind,cm,filename,'gif', 'Loopcount',Inf,'DelayTime',1); 
         else 
-          imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05);        end 
-        
+          imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05);        
+        end 
     end
-
-     
-    i=i+1;
+    i=i+1; % increment time
     
 end
 
