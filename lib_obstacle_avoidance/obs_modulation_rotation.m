@@ -203,9 +203,13 @@ phi0 = pi; % no bais if = pi, otherwise towards one side
 d0 = 1; % reference distance, the bigger the stronge the distance effect
 nd = 1; % distance exponent, the bigger, the stronger the distance effect
 
-kappa = kappa0 ^ ((pi-deltaPhi)/phi0 * (d0/d)^nd);
+%deltaPhi = deltaPhi 
+kappa = kappa0 ^ ((deltaPhi-pi)/phi0 * (d0/d)^nd);
 %kappa = 1;
-M = kappa*R;
+
+% Calculate final modulation
+%M = kappa*R
+M = R;
 
 if plotFigure; plot([x(1),x(1)+1.1*xd(1)],[x(2),x(2)+1.1*xd(2)],'b'); end
 
@@ -214,6 +218,9 @@ xd = M*xd; % velocity modulation
 if plotFigure; plot([x(1),x(1)+xd(1)],[x(2),x(2)+xd(2)],'m'); end
 
 xd = xd + xd_obs ; % transforming back the velocity into the global coordinate system
+
+% velocity speed up/slow down is applied after...
+xd = kappa*eye(d)*xd;
 
 end
 

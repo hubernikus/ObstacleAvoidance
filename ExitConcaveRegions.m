@@ -288,6 +288,9 @@ fprintf('End 2D-Simulation \n');
 clc; %close all;
 fprintf('Start 2D-Simulation \n');
 
+opt_sim.dt = 0.01; %integration time steps
+opt_sim.i_max = 300; %maximum number of iterations
+
 fn_handle = @(x) linearStableDS(x);
 %x0 = randn(2,15)*10; % randomly distributed points
 N_samples = 20;
@@ -303,19 +306,20 @@ obs = [];
 obs{1}.a = [1; 2];
 obs{1}.p = [1; 1];
 %obs{1}.partition = [-pi 0];
-obs{1}.x0 = [-6;1];
+obs{1}.x0 = [-6;10];
 obs{1}.sf = [1.1];
 obs{1}.th_r = 0*pi/180;
 obs{1}.perturbation.t0 = 0;
 obs{1}.perturbation.tf = 2;
-obs{1}.perturbation.dx = [0;-1];  
+obs{1}.perturbation.dx = [0;-20];  
 
 
 
 % Start simulation
 opt_sim.obstacle = obs;
 
-fig(1) = figure('name','localRotatoin_avoidMovingEllipse_yNeg1','position',[100 550 560 420]);
+fig(1) = figure('name','localRotatoin_avoidMovingEllipse_yNeg20','position',[100 550 560 420]);
+xlim([-15,3])
 opt_sim.figure = fig(1);
 Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 fprintf('End 2D-Simulation \n');
@@ -324,7 +328,9 @@ fprintf('End 2D-Simulation \n');
 %% Demo: 2D - multiple objects overlapping
 clc; %close all;
 fprintf('Start 2D-Simulation \n');
-opt_sim.i_max = 500; %maximum number of iterations
+
+opt_sim.dt = 0.01; %integration time steps
+opt_sim.i_max = 300; %maximum number of iterations
 
 fn_handle = @(x) linearStableDS(x);
 %x0 = randn(2,15)*10; % randomly distributed points
@@ -341,20 +347,65 @@ obs = [];
 obs{1}.a = [1; 2];
 obs{1}.p = [1; 1];
 %obs{1}.partition = [-pi 0];
-obs{1}.x0 = [1;0];
+obs{1}.x0 = [-6;10];
 obs{1}.sf = [1.1];
 obs{1}.th_r = 0*pi/180;
 obs{1}.perturbation.t0 = 0;
-obs{1}.perturbation.tf = 3;
-obs{1}.perturbation.dx = [-1;0];  
+obs{1}.perturbation.tf = 2;
+obs{1}.perturbation.dx = [-1;-0];  
 
 
 
 % Start simulation
 opt_sim.obstacle = obs;
 
-fig(1) = figure('name','localRotatoin_avoidMovingEllipse_xNeg1','position',[100 100 800 800 ]);
-xlim([-14,6]); ylim([-25,25])
+fig(1) = figure('name','localRotatoin_avoidMovingEllipse_xNeg1','position',[100 550 560 420]);
+xlim([-15,3])
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+fprintf('End 2D-Simulation \n');
+
+
+%% Demo: 2D - multiple objects overlapping
+clc; %close all;
+fprintf('Start 2D-Simulation \n');
+
+opt_sim.dt = 0.01; %integration time steps
+opt_sim.i_max = 300; %maximum number of iterations
+
+
+fn_handle = @(x) linearStableDS(x);
+%x0 = randn(2,15)*10; % randomly distributed points
+N_samples = 20;
+%y = -10:1:10;
+%x0 = [-10*ones(1,length(y)); y]; 
+x0 = [linspace(-10,-10,N_samples);
+      linspace(-10,10,N_samples)]; 
+
+
+% Place obstacles
+obs = [];
+% obstacle 1
+obs{1}.a = [1; 2];
+obs{1}.p = [1; 1];
+%obs{1}.partition = [-pi 0];
+obs{1}.x0 = [-6;8];
+obs{1}.sf = [1.1];
+obs{1}.th_r = 0*pi/180;
+obs{1}.perturbation.t0 = 0;
+obs{1}.perturbation.tf = 0.4;
+obs{1}.perturbation.dx = [0;-20];  
+% obs{1}.perturbation.t0 = 0.4;
+% obs{1}.perturbation.tf = 0.8;
+% obs{1}.perturbation.dx = [0;+20];  
+
+
+
+% Start simulation
+opt_sim.obstacle = obs;
+
+fig(1) = figure('name','localRotatoin_avoidMovingEllipse_yNeg20_withStopping','position',[100 100 800 800 ]);
+xlim([-14,2]); ylim([-15,15])
 opt_sim.figure = fig(1);
 Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 fprintf('End 2D-Simulation \n');
@@ -391,10 +442,91 @@ obs{1}.perturbation.dx = [2;0];
 % Start simulation
 opt_sim.obstacle = obs;
 
-fig(1) = figure('name','localRotatoin_avoidMovingEllipse_xPos1','position',[100 100 800 800 ]);
+fig(1) = figure('name','localRotatoin_avoidMovingEllipse_xVel_towards0','position',[100 100 800 800 ]);
+xlim([-14,10]); ylim([-12,12])
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+fprintf('End 2D-Simulation \n');
+
+
+%% Demo: 2D - multiple objects overlapping
+clc; %close all;
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+%x0 = randn(2,15)*10; % randomly distributed points
+N_samples = 20;
+%y = -10:1:10;
+%x0 = [-10*ones(1,length(y)); y]; 
+x0 = [linspace(-10,-10,N_samples);
+      linspace(-10,10,N_samples)]; 
+
+
+% Place obstacles
+obs = [];
+% obstacle 1
+obs{1}.a = [1; 2];
+obs{1}.p = [1; 1];
+%obs{1}.partition = [-pi 0];
+obs{1}.x0 = [2;0];
+obs{1}.sf = [1.1];
+obs{1}.th_r = 0*pi/180;
+obs{1}.perturbation.t0 = 0;
+obs{1}.perturbation.tf = 6;
+obs{1}.perturbation.dx = [-1;0];  
+
+
+
+% Start simulation
+opt_sim.obstacle = obs;
+
+fig(1) = figure('name','localRotatoin_avoidMovingEllipse_xVelNeg','position',[100 100 800 800 ]);
+xlim([-25,10]); ylim([-35,35])
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+fprintf('End 2D-Simulation \n');
+
+%% Demo: 2D - multiple objects overlapping
+clc; %close all;
+fprintf('Start 2D-Simulation \n');
+
+opt_sim.dt = 0.05; %integration time steps
+opt_sim.i_max = 300; %maximum number of iterations
+
+fn_handle = @(x) linearStableDS(x);
+%x0 = randn(2,15)*10; % randomly distributed points
+N_samples = 20;
+%y = -10:1:10;
+%x0 = [-10*ones(1,length(y)); y]; 
+x0 = [linspace(-2,-10,N_samples);
+      linspace(-10,10,N_samples)]; 
+  
+x0 =[0;-10];
+
+
+% Place obstacles
+obs = [];
+% obstacle 1
+obs{1}.a = [1; 2];
+obs{1}.p = [1; 1];
+%obs{1}.partition = [-pi 0];
+obs{1}.x0 = [-8;3];
+obs{1}.sf = [1.1];
+obs{1}.th_r = 0*pi/180;
+obs{1}.perturbation.t0 = 0;
+obs{1}.perturbation.tf = 6;
+obs{1}.perturbation.dx = [-5;0];  
+
+
+
+% Start simulation
+opt_sim.obstacle = obs;
+
+fig(1) = figure('name','localRotatoin_avoidMovingEllipse_movingObj_attractionPos','position',[100 100 800 800 ]);
 xlim([-14,6]); ylim([-15,15])
 opt_sim.figure = fig(1);
 Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 fprintf('End 2D-Simulation \n');
+
 
 end
