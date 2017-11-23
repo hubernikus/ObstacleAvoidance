@@ -93,6 +93,14 @@ figName = get(gcf,'Name');
 filename = sprintf(strcat('animations/',figName,'.gif'));
 
 
+% Initialization of avi video object
+nFrames = 20;
+vidObj = VideoWriter(strcat('animations/', figName, '.avi'));
+vidObj.Quality = 100;
+vidObj.FrameRate = 20;
+open(vidObj);
+
+
 %% parsing inputs
 if isempty(varargin)
     options = check_options();
@@ -309,19 +317,29 @@ while true
     end
     
     if(figSave) % write to file
-        frame = getframe(sp.fig); 
-        im = frame2im(frame); 
-        [imind,cm] = rgb2ind(im,256); 
-        % Write to the GIF File 
-        if i == 1 
-          imwrite(imind,cm,filename,'gif', 'Loopcount',Inf,'DelayTime',1); 
-        else 
-          imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05);        
-        end 
-    end
+%         frame = getframe(sp.fig); 
+%         im = frame2im(frame); 
+%         [imind,cm] = rgb2ind(im,256); 
+%         % Write to the GIF File 
+%         if i == 1 
+%           imwrite(imind,cm,filename,'gif', 'Loopcount',Inf,'DelayTime',1); 
+%         else 
+%           imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05);        
+%         end 
+        
+        
+        
+        %# create movie
+       %surf(sin(2*pi*k/20)*Z, Z)
+       writeVideo(vidObj, getframe(gca));
+        %close(gcf)
+
+        %# save as AVI file, and open it using system video player
+        end
     i=i+1; % increment time
     
 end
+close(vidObj);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
