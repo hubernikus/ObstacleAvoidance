@@ -74,6 +74,18 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 %     Realtime Obstacle Avoidance", Autonomous Robots, 2012
 %
 %%
+
+
+%%
+% To try:
+% Two objects -- litterature
+% Multibple objects -- litterature
+% intersection objects -- literature
+% Convex objects -- literature
+% Convex objects -- space transformation... Airfoil.
+%
+%
+
 N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
@@ -135,7 +147,7 @@ R = [cos(th_r),-sin(th_r);
      sin(th_r),cos(th_r)];
  
 % Stretch  
-A = diag([obs.a(1)*obs.sf(1),obs.a(2)*obs.sf(2)]);
+A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
 trafoMat = pinv(A)*R';
 
 % Rotation of everything

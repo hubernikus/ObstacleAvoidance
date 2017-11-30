@@ -111,6 +111,13 @@ else
     options = check_options(varargin{1}); % Checking the given options, and add ones are not defined.
 end
 
+if ~isfield(options,'obsFunc') % integration time step
+    obsFunc_handle = @(x, xd, obs, xd_obs) obs_modulation_ellipsoid(x,xd,obs,xd_obs);
+else
+    obsFunc_handle = options.obsFunc;
+end
+
+
 if options.model == 2; %2nd order
     d=size(x0,1)/2; %dimension of the model
     if isempty(xT)
@@ -229,10 +236,13 @@ while true
         end
         
         for j=1:nbSPoint % j - iteration over number of starting points
-           %[xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
+           [xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
            %[xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid_adapted(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
            %xd(:,iSim,j) = obs_modulation_rotation(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
-           xd(:,iSim,j) = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
+            %xd(:,iSim,j) = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
+           
+           
+           %xd(:,iSim,j) = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
         end
 
     end
@@ -362,12 +372,19 @@ else
     options.dt=0.02; %to create the variable
 end
 
+
+
+if ~isfield(options,'model') % first order ordinary differential equation
+    options.model = 1;
+end
+
 if ~isfield(options,'dt') % integration time step
     options.dt = 0.02;
 end
 if ~isfield(options,'model') % first order ordinary differential equation
     options.model = 1;
 end
+
 if ~isfield(options,'i_max') % maximum number of iterations
     options.i_max = 1000;
 end
