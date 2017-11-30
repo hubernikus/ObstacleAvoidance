@@ -87,19 +87,22 @@ function [x xd t xT x_obs]=Simulation(x0,xT,fn_handle,varargin)
 %                           mohammad.khansari_at_epfl.ch
 
 % Additional variable - introduce in funciton header
-%figShow = 'off' % either 'on' or 'off'
-figSave = true
-figName = get(gcf,'Name');
-filename = sprintf(strcat('animations/',figName,'.gif'));
 
 
-% Initialization of avi video object
-nFrames = 20;
-vidObj = VideoWriter(strcat('animations/', figName, '.avi'));
-vidObj.Quality = 100;
-vidObj.FrameRate = 20;
-open(vidObj);
+figSave = false;
 
+if figSave
+    % Figure Name
+    figName = get(gcf,'Name');
+    filename = sprintf(strcat('animations/',figName,'.gif'));
+    
+    % Initialization of avi video object
+    nFrames = 20;
+    vidObj = VideoWriter(strcat('animations/', figName, '.avi'));
+    vidObj.Quality = 100;
+    vidObj.FrameRate = 20;
+    open(vidObj);
+end
 
 %% parsing inputs
 if isempty(varargin)
@@ -160,8 +163,8 @@ else
 end
 
 %initialization
-for i=1:nbSPoint
-    x(:,1,i) = x0(:,i);
+for iSim=1:nbSPoint
+    x(:,1,iSim) = x0(:,iSim);
 end
 if options.model == 2; %2nd order
     xd = zeros(d,1,nbSPoint);
@@ -189,18 +192,18 @@ if options.plot %plotting options
     end
 end
 %% Simulation
-i=1; % simulation iteration variable
+iSim=1; % simulation iteration variable
 while true
     %Finding xd using fn_handle.
     if options.timeDependent
-        tt = repmat(t(i),1,nbSPoint);
+        tt = repmat(t(iSim),1,nbSPoint);
         if nargin(fn_handle) == 1
-            xd(:,i,:)=reshape(fn_handle([squeeze(x(:,i,:))-XT;tt]),[d 1 nbSPoint]);
+            xd(:,iSim,:)=reshape(fn_handle([squeeze(x(:,iSim,:))-XT;tt]),[d 1 nbSPoint]);
         else
-            xd(:,i,:)=reshape(fn_handle(tt,squeeze(x(:,i,:))-XT),[d 1 nbSPoint]);
+            xd(:,iSim,:)=reshape(fn_handle(tt,squeeze(x(:,iSim,:))-XT),[d 1 nbSPoint]);
         end
     else
-        xd(:,i,:)=reshape(fn_handle(squeeze(x(:,i,:))-XT),[d 1 nbSPoint]);
+        xd(:,iSim,:)=reshape(fn_handle(squeeze(x(:,iSim,:))-XT),[d 1 nbSPoint]);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -209,7 +212,7 @@ while true
         % applying perturbation on the obstacles
         for n=1:length(obs) 
             if isfield(obs{n},'perturbation')
-                if i >= round(obs{n}.perturbation.t0/options.dt)+1 && i <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
+                if iSim >= round(obs{n}.perturbation.t0/options.dt)+1 && iSim <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
                     x_obs{n}(:,end+1) = x_obs{n}(:,end) + obs{n}.perturbation.dx*options.dt;
                     obs{n}.x0 = x_obs{n}(:,end);
                     xd_obs = obs{n}.perturbation.dx; % all velocities ????
@@ -226,9 +229,10 @@ while true
         end
         
         for j=1:nbSPoint % j - iteration over number of starting points
-           %[xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
-           %[xd(:,i,j) b_contour(j)] = obs_modulation_ellipsoid_adapted(x(:,i,j),xd(:,i,j),obs,b_contour(j),xd_obs);
-           xd(:,i,j) = obs_modulation_rotation(x(:,i,j),xd(:,i,j),obs,xd_obs);
+           %[xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
+           %[xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid_adapted(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
+           %xd(:,iSim,j) = obs_modulation_rotation(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
+           xd(:,iSim,j) = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
         end
 
     end
@@ -237,18 +241,18 @@ while true
     %%% Integration
         
     if options.model == 2; %2nd order
-        x(d+1:2*d,i+1,:)=x(d+1:2*d,i,:)+xd(:,i,:)*options.dt;
-        x(1:d,i+1,:)=x(1:d,i,:)+x(d+1:2*d,i,:)*options.dt;
+        x(d+1:2*d,iSim+1,:)=x(d+1:2*d,iSim,:)+xd(:,iSim,:)*options.dt;
+        x(1:d,iSim+1,:)=x(1:d,iSim,:)+x(d+1:2*d,iSim,:)*options.dt;
     else
-        x(:,i+1,:)=x(:,i,:)+xd(:,i,:)*options.dt;
+        x(:,iSim+1,:)=x(:,iSim,:)+xd(:,iSim,:)*options.dt;
     end
-    t(i+1)=t(i)+options.dt;
+    t(iSim+1)=t(iSim)+options.dt;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Applying perturbation if any
     switch options.perturbation.type
         case 'tdp' %applying target discrete perturbation
-            if i == round(options.perturbation.t0/options.dt)+1 && length(options.perturbation.dx)==d
+            if iSim == round(options.perturbation.t0/options.dt)+1 && length(options.perturbation.dx)==d
                 xT(:,end+1) = xT(:,end) + options.perturbation.dx;
                 XT = repmat(xT(:,end),1,nbSPoint);
                 if options.plot %plotting options
@@ -258,11 +262,11 @@ while true
                 xT(:,end+1) = xT(:,end);
             end
         case 'rdp' %applying robot discrete perturbation
-            if i == round(options.perturbation.t0/options.dt)+1 && length(options.perturbation.dx)==d
-                x(:,i+1,:) = x(:,i+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint]);
+            if iSim == round(options.perturbation.t0/options.dt)+1 && length(options.perturbation.dx)==d
+                x(:,iSim+1,:) = x(:,iSim+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint]);
             end
         case 'tcp' %applying target continuous perturbation
-            if i >= round(options.perturbation.t0/options.dt)+1 && i <= round(options.perturbation.tf/options.dt) && length(options.perturbation.dx)==d
+            if iSim >= round(options.perturbation.t0/options.dt)+1 && iSim <= round(options.perturbation.tf/options.dt) && length(options.perturbation.dx)==d
                 xT(:,end+1) = xT(:,end) + options.perturbation.dx*options.dt;
                 XT = repmat(xT(:,end),1,nbSPoint);
                 if options.plot %plotting options
@@ -272,8 +276,8 @@ while true
                 xT(:,end+1) = xT(:,end);
             end
         case 'rcp' %applying robot continuous perturbation
-            if i >= round(options.perturbation.t0/options.dt)+1 && i <= round(options.perturbation.tf/options.dt) && length(options.perturbation.dx)==d
-                x(:,i+1,:) = x(:,i+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint])*options.dt;
+            if iSim >= round(options.perturbation.t0/options.dt)+1 && iSim <= round(options.perturbation.tf/options.dt) && length(options.perturbation.dx)==d
+                x(:,iSim+1,:) = x(:,iSim+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint])*options.dt;
             end
     end
 
@@ -286,19 +290,19 @@ while true
         end
     end
     
-    xd_3last = xd(:,max([1 i-3]):i,:);
+    xd_3last = xd(:,max([1 iSim-3]):iSim,:);
     xd_3last(isnan(xd_3last)) = 0;
     
     %Checking the convergence
-    if all(all(all(abs(xd_3last)<options.tol))) || i>options.i_max-2
+    if all(all(all(abs(xd_3last)<options.tol))) || iSim>options.i_max-2
         if options.plot
             plot_results('f',sp,x,xT);
         end
-        i=i+1;
+        iSim=iSim+1;
 %         xd(:,i,:)=reshape(fn_handle(squeeze(x(:,i,:))-XT),[d 1 nbSPoint]);
         x(:,end,:) = [];
         t(end) = [];
-        fprintf('Number of Iterations: %1.0f\n',i)
+        fprintf('Number of Iterations: %1.0f\n',iSim)
         tmp='';
         for j=1:d
             tmp=[tmp ' %1.4f ;'];
@@ -309,13 +313,20 @@ while true
         fprintf(['Target Position: [' tmp ']\n'],xT(:,end))
         fprintf('## #####################################################\n\n\n')
         
-        if i>options.i_max-2
-            fprintf('Simulation stopped since it reaches the maximum number of allowed iterations i_max = %1.0f\n',i)
+        if iSim>options.i_max-2
+            fprintf('Simulation stopped since it reaches the maximum number of allowed iterations i_max = %1.0f\n',iSim)
             fprintf('Exiting without convergence!!! Increase the parameter ''options.i_max'' to handle this error.\n')
         end
         break
     end
     
+    %%%%%%%%%%%%%%%%% Check for collision %%%%%%%%%%%%%%%%%%%%%%%
+    for ii = 1:size(x,3)
+        obs_check_collision(obs,x(:,end,ii) );
+        %fprintf('checkoo')
+    end
+    
+    %%%%%%%%%%%%%%%% Create Animation %%%%%%%%%%%%%%%%%%%%%%%
     if(figSave) % write to file
 %         frame = getframe(sp.fig); 
 %         im = frame2im(frame); 
@@ -331,15 +342,16 @@ while true
         
         %# create movie
        %surf(sin(2*pi*k/20)*Z, Z)
-       writeVideo(vidObj, getframe(gca));
+        writeVideo(vidObj, getframe(gca));
         %close(gcf)
 
         %# save as AVI file, and open it using system video player
-        end
-    i=i+1; % increment time
+    end
+    iSim=iSim+1; % increment time
     
 end
-close(vidObj);
+if(figSave); close(vidObj); end % Close video obj
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

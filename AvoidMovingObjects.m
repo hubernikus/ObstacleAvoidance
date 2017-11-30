@@ -142,7 +142,7 @@ print('fig/quiverPlot_DS_LS_ellipse_modulation','-depsc')
 
 %%
 %% Demo: 2D - multiple objects overlapping
-close all;
+close all; clc;
 
 fprintf('Start 2D-Simulation \n');
 
@@ -153,7 +153,7 @@ fn_handle = @(x) linearStableDS(x);
 %phi0 = (1:N_samples)/N_samples*2*pi;
 %r0 = 10;
 % x0 = [r0* cos(phi0); r0*sin(phi0)];
-x0 = [-10;0];
+%x0 = [-10;-4];
 x0 = [ones(1,27)*-10 ; -13:1:13];
 
 
@@ -196,14 +196,14 @@ x0 = [ones(1,27)*-10 ; -13:1:13];
 % Place obstacles
 obs = [];
 % obstacle 1
-obs{1}.a = [6;-1];
+obs{1}.a = [3;-1];
 obs{1}.p = [1;1];
-obs{1}.x0 = [-5;0];
+obs{1}.x0 = [-8;0];
 obs{1}.sf = [1.2;1.2];
 obs{1}.th_r = 90*pi/180;
 obs{1}.perturbation.t0 = 0;
 obs{1}.perturbation.tf = 2;
-obs{1}.perturbation.dx = [0;-3];  
+obs{1}.perturbation.dx = [0;-10];  
 
 
 % Start simulation
@@ -265,7 +265,7 @@ Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 fprintf('End 2D-Simulation \n');
 
 %% Demo: 2D - multiple objects overlapping
-clc; %close all;
+clc; close all;
 fprintf('Start 2D-Simulation \n');
 
 fn_handle = @(x) linearStableDS(x);

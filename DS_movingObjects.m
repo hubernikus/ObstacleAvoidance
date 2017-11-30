@@ -17,8 +17,8 @@ if isempty(regexp(path,['lib_obstacle_avoidance' pathsep], 'once'))
     addpath([pwd, '/lib_obstacle_avoidance']);
 end
 %adding the example folder to the MATLAB path directories
-if isempty(regexp(path,['Example_DSs' pathsep], 'once'))
-    addpath([pwd, '/Example_DSs']);
+if isempty(regexp(path,['DynamicalSystems' pathsep], 'once'))
+    addpath([pwd, '/DynamicalSystems']);
 end
 
 % Set default simulation parameters
@@ -28,15 +28,6 @@ opt_sim.tol = 0.1; % convergence tolerance
 opt_sim.plot = true; % enabling the animation
 opt_sim.model = 1; % first order ordinary differential equation
 opt_sim.obstacle = []; %no obstacle is defined
-
-%adding the obstacle avoidance folder to the MATLAB path directories
-if isempty(regexp(path,['lib_obstacle_avoidance' pathsep], 'once'))
-    addpath([pwd, '/lib_obstacle_avoidance']);
-end
-%adding the example folder to the MATLAB path directories
-if isempty(regexp(path,['Example_DSs' pathsep], 'once'))
-    addpath([pwd, '/Example_DSs']);
-end
 
 
 %% Demo: 2D - linear fixed point attractor
