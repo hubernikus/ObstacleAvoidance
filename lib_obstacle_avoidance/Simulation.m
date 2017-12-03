@@ -183,6 +183,9 @@ if size(xT) == size(x0)
 else
     XT = repmat(xT,1,nbSPoint); %a matrix of target location (just to simplify computation)
 end
+
+xd_obs  = zeros(2,length(obs)); % Linear veloctiy
+w_obs = zeros(1,length(obs));   % Angular rate
             
 t=0; %starting time
 
@@ -204,7 +207,7 @@ while true
     %Finding xd using fn_handle.
     if options.timeDependent
         tt = repmat(t(iSim),1,nbSPoint);
-        if nargin(fn_handle) == 1
+        if nargin(fn_handle) == 1   
             xd(:,iSim,:)=reshape(fn_handle([squeeze(x(:,iSim,:))-XT;tt]),[d 1 nbSPoint]);
         else
             xd(:,iSim,:)=reshape(fn_handle(tt,squeeze(x(:,iSim,:))-XT),[d 1 nbSPoint]);
@@ -218,33 +221,40 @@ while true
     if obs_bool
         % applying perturbation on the obstacles
         for n=1:length(obs) 
+            w_obs(n) = 0;
+            xd_obs(:,n) = [0;0];
             if isfield(obs{n},'perturbation')
                 if iSim >= round(obs{n}.perturbation.t0/options.dt)+1 && iSim <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
                     x_obs{n}(:,end+1) = x_obs{n}(:,end) + obs{n}.perturbation.dx*options.dt;
                     obs{n}.x0 = x_obs{n}(:,end);
-                    xd_obs = obs{n}.perturbation.dx; % all velocities ????
-                    if options.plot %plotting options
-                        plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt);
+                    xd_obs(:,n) = obs{n}.perturbation.dx; % all velocities ????
+                    
+                    if isfield(obs{n}.perturbation,'w') % Check rotational rate
+                        w_obs(n) = obs{n}.perturbation.w;
                     end
-                else
-                    x_obs{n}(:,end+1) = x_obs{n}(:,end);
-                    xd_obs = 0;
+
+                    if options.plot %plotting options
+                        plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt, obs);
+                    end
                 end
-            else
-                xd_obs = 0;
             end
         end
         
         for j=1:nbSPoint % j - iteration over number of starting points
-           [xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
+           %[xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
            %[xd(:,iSim,j) b_contour(j)] = obs_modulation_ellipsoid_adapted(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs);
            %xd(:,iSim,j) = obs_modulation_rotation(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
             %xd(:,iSim,j) = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
-           
+                       
+           [xd(:,iSim,j) b_contour(j)] = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
            
            %xd(:,iSim,j) = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
         end
-
+        
+        for n=1:length(obs) % integration of object (linear motion!) -- first order.. 
+            obs{n}.th_r(:) =  obs{n}.th_r + w_obs(n)*options.dt;
+            x_obs{n}(:,end+1) = x_obs{n}(:,end);
+        end
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,6 +263,7 @@ while true
     if options.model == 2; %2nd order
         x(d+1:2*d,iSim+1,:)=x(d+1:2*d,iSim,:)+xd(:,iSim,:)*options.dt;
         x(1:d,iSim+1,:)=x(1:d,iSim,:)+x(d+1:2*d,iSim,:)*options.dt;
+        
     else
         x(:,iSim+1,:)=x(:,iSim,:)+xd(:,iSim,:)*options.dt;
     end
@@ -280,7 +291,7 @@ while true
                 xT(:,end+1) = xT(:,end) + options.perturbation.dx*options.dt;
                 XT = repmat(xT(:,end),1,nbSPoint);
                 if options.plot %plotting options
-                    plot_results('t',sp,x,xT);
+                    %plot_results('t',sp,x,xT);
                 end
             else
                 xT(:,end+1) = xT(:,end);
@@ -306,9 +317,10 @@ while true
     %Checking the convergence
     if all(all(all(abs(xd_3last)<options.tol))) || iSim>options.i_max-2
         if options.plot
-            plot_results('f',sp,x,xT);
+            %plot_results('f',sp,x,xT);
         end
         iSim=iSim+1;
+
 %         xd(:,i,:)=reshape(fn_handle(squeeze(x(:,i,:))-XT),[d 1 nbSPoint]);
         x(:,end,:) = [];
         t(end) = [];
@@ -332,8 +344,11 @@ while true
     
     %%%%%%%%%%%%%%%%% Check for collision %%%%%%%%%%%%%%%%%%%%%%%
     for ii = 1:size(x,3)
-        obs_check_collision(obs,x(:,end,ii) );
-        %fprintf('checkoo')
+        if obs_check_collision(obs,x(:,end,ii)) %Observe collision
+            % TODO: check tis
+            plot(x(1,end,ii) , x(2,end,ii) , 'kx', 'Linewidth', 10);
+            fprintf('Collision detected at [%3.2f,%3.3f] \n',x(:,end,ii) ); 
+        end
     end
     
     %%%%%%%%%%%%%%%% Create Animation %%%%%%%%%%%%%%%%%%%%%%%
@@ -357,6 +372,7 @@ while true
 
         %# save as AVI file, and open it using system video player
     end
+    axis equal;
     iSim=iSim+1; % increment time
     
 end
@@ -371,8 +387,6 @@ if ~isempty(varargin)
 else
     options.dt=0.02; %to create the variable
 end
-
-
 
 if ~isfield(options,'model') % first order ordinary differential equation
     options.model = 1;
@@ -420,6 +434,7 @@ else
     b_obs = true;
     obs = varargin{1};
 end
+
 [d, ~, nbSPoint] = size(x);
 switch mode
     case 'i' %initializing the figure
@@ -457,13 +472,10 @@ switch mode
             end
             sp.axis = gca;
             hold on
-            %sp.xT = plot3(xT(1),xT(2),xT(3),'k*','EraseMode','none','markersize',10,'linewidth',1.5);!!!DELeTE
-            %sp.xT_l = plot3(xT(1),xT(2),xT(3),'k--','EraseMode','none','linewidth',1.5);!!!DELeTE
             sp.xT = plot3(xT(1),xT(2),xT(3),'k*','markersize',10,'linewidth',1.5);
             sp.xT_l = plot3(xT(1),xT(2),xT(3),'k--','linewidth',1.5);
             for j=1:nbSPoint
                 plot3(x(1,1,j),x(2,1,j),x(3,1,j),'ok','markersize',2,'linewidth',7.5)
-                %sp.x(j)= plot3(x(1,1,j),x(2,1,j),x(3,1,j),'EraseMode','none');!!!DELeTE
                 sp.x(j)= plot3(x(1,1,j),x(2,1,j),x(3,1,j));
             end
             
@@ -490,13 +502,10 @@ switch mode
             for i=2:d
                 sp.axis(i-1)=subplot(d-1,1,i-1);
                 hold on
-                %sp.xT(i-1) = plot(xT(1),xT(i),'k*','EraseMode','none','markersize',10,'linewidth',1.5);!!! DELETE
-                %sp.xT_l(i-1) =                 %plot(xT(1),xT(i),'k--','EraseMode','none','linewidth',1.5); !!! DELETE
                 sp.xT(i-1) = plot(xT(1),xT(i),'k*','markersize',10,'linewidth',1.5);
                 sp.xT_l(i-1) = plot(xT(1),xT(i),'k--','linewidth',1.5);
                 for j=1:nbSPoint
                     plot(x(1,1,j),x(i,1,j),'ok','markersize',2,'linewidth',7.5);
-                    %sp.x(i-1,j)= plot(x(1,1,j),x(i,1,j),'EraseMode','none'); !!! DELETE
                     sp.x(i-1,j)= plot(x(1,1,j),x(i,1,j));
                 end
                 ylabel(['$\xi_' num2str(i) '$'],'interpreter','latex','fontsize',12);
@@ -601,19 +610,33 @@ switch mode
             end
         end
         
-    case 'o' %updating the obstacle position
+    case 'o' % Updating the obstacle position
         if gcf ~= sp.fig
             figure(sp.fig)
         end
-        if b_obs
+        if b_obs 
             n = varargin{1};
             dx = varargin{2};
-            if d==2
-                set(sp.obs(n),'XData',get(sp.obs(n),'XData')+ dx(1))
-                set(sp.obs(n),'YData',get(sp.obs(n),'YData')+ dx(2))
-                
-                set(sp.obs_sf(n),'XData',get(sp.obs_sf(n),'XData')+ dx(1))
-                set(sp.obs_sf(n),'YData',get(sp.obs_sf(n),'YData')+ dx(2))
+            if d==2 
+                obs = varargin{3};
+                if(isfield(obs{n}.perturbation,'w'))
+                    
+                    % Redraw whole circle
+                    [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,40);
+                    
+                    set(sp.obs(n),'XData',x_obs(1,:,n))
+                    set(sp.obs(n),'YData',x_obs(2,:,n))
+
+                    set(sp.obs_sf(n),'XData',x_obs_sf(1,:,n))
+                    set(sp.obs_sf(n),'YData',x_obs_sf(2,:,n))
+                else
+                    % Update only velocity
+                    set(sp.obs(n),'XData',get(sp.obs(n),'XData')+ dx(1))
+                    set(sp.obs(n),'YData',get(sp.obs(n),'YData')+ dx(2))
+
+                    set(sp.obs_sf(n),'XData',get(sp.obs_sf(n),'XData')+ dx(1))
+                    set(sp.obs_sf(n),'YData',get(sp.obs_sf(n),'YData')+ dx(2))
+                end
             elseif d==3
                 set(sp.obs(n),'XData',get(sp.obs(n),'XData')+ dx(1))
                 set(sp.obs(n),'YData',get(sp.obs(n),'YData')+ dx(2))

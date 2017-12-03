@@ -1,4 +1,4 @@
-function [x_obs x_obs_sf] = obs_draw_ellipsoid_2(obs,ns)
+function [x_obs x_obs_sf] = obs_draw_ellipsoid(obs,ns)
 %
 % Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %
@@ -152,6 +152,13 @@ for n=1:N
     end
     
     x_obs(:,:,n) = R*x_obs(:,:,n) + repmat(obs{n}.x0,1,np);
+    
+    % Introduce Concave Objects
+    if(isfield(obs{n},'concaveAngle'))
+        x_obs(:,:,n) = ellipsFold(x_obs(:,:,n),obs{n}.x0, obs{n}.concaveAngle);
+        x_obs_sf(:,:,n) = ellipsFold(x_obs_sf(:,:,n),obs{n}.x0, obs{n}.concaveAngle);
+    end
+end
 end
 
 function R = compute_R(d,th_r)
@@ -166,4 +173,39 @@ elseif d == 3
     R = R_x*R_y*R_z;
 else %rotation is not yet supported for d > 3
     R = eye(d);
+end
+end
+
+
+function x = ellipsFold(x, x0, concaveAng)
+x = x-x0; % center
+
+normX = sqrt(sum(x.^2,1));
+
+phi = atan2(x(2,:), x(1,:));
+%phi = phi - (phi>pi)*2*pi
+
+phi_prime = foldFunction_lin(phi, concaveAng); % apply fold
+
+x = [cos(phi_prime);sin(phi_prime)].*normX;
+
+x = x +x0; % move initial posiiton 
+
+end
+
+
+function phi = foldFunction_lin(phi, concaveAng)
+absPhi = abs(phi);
+
+for i = 1:length(absPhi)
+    if absPhi(i) < pi/2
+        m = (absPhi(i)*concaveAng/pi);
+        phi(i) = sign(phi(i)).*m;
+    else
+        m = (2-concaveAng/pi);
+        q = (concaveAng-pi);
+        phi(i) = sign(phi(i)).*(m*absPhi(i)+q);
+    end
+end
+
 end

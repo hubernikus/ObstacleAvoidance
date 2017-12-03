@@ -142,7 +142,7 @@ xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
 %ordering the obstacle number so as the closest one will be considered at
 %last (i.e. higher priority)
 [~,obs_order] = sort(Gamma,'descend');
-for n = obs_order;
+for n = obs_order
     if isfield(obs{n},'rho')
         rho = obs{n}.rho;
     else
