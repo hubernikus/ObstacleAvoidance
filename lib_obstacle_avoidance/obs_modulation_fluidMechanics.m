@@ -69,65 +69,121 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 % 
 % 
 % This code is writen based on the following paper:
-% 
 %     S.M. Khansari Zadeh and A. Billard, "A Dynamical System Approach to
 %     Realtime Obstacle Avoidance", Autonomous Robots, 2012
 %
 %%
+% To try:
+% Two objects -- litterature
+% Multibple objects -- litterature
+% intersection objects -- literature
+% Convex objects -- literature
+% Convex objects -- space transformation... Airfoil.
+%
+%
+
 N = length(obs); %number of obstacles
 d = size(x,1);
-Gamma = zeros(1,N);
 
-% xd_dx_obs = zeros(d,N);
-% xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
-% 
-% %adding the influence of the rotational and cartesian velocity of the
-% %obstacle to the velocity of the robot
-% xd_obs = 0;
-% for n=1:N
-%     if ~isfield(obs{n},'sigma')
-%         obs{n}.sigma = 1;
-%     end
-%     xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
-%                                        (xd_dx_obs(:,n) + xd_w_obs(:,n)); 
-% end
-i=1;
-if(isfield(obs{i},'perturbation'))
-    xd_obs = obs{i}.perturbation.dx;
-else
-    xd_obs = 0;
+xd_obs = zeros(2,N);
+w_obs = zeros(2,N);
+
+for i=1:length(varargin)
+    if ~isempty(varargin)
+        switch i
+            case 1
+                xd_obs = varargin{1};
+            case 2
+                w_obs = varargin{2};
+        end
+    end
 end
 
-xd = xd  - xd_obs; %computing the relative velocity with respect to the obstacle
-%xd = xd + randn(2,1)*1e-10 - xd_obs; %computing the relative velocity with respect to the obstacle
+% Find sort object descending distance
+dist2= zeros(1,N);
 
-modulation = 'ellipse';
-switch modulation
-    case 'ellipse'
-        i = 1; 
-        xd = deflectionEllipse(obs{i}, x, xd);
-    case 'circle'
-        i = 1;
-        R = obs{i}.a(1)*obs{i}.sf(1);
-        x0 = obs{i}.x0;
-        
-        xd = deflectionOfInitSys(R, x0, x, xd);
-    case 'random'
-        fprintf('not done')
-    otherwise
-        fprinft('case not defined \n');
+for ii = 1:N
+    dist2(ii) = sum((x-obs{ii}.x0).^2);
+end
+[dist,indDist] = sort(dist2,'descend');
+
+
+
+for ind = indDist
+
+    xd = xd  - xd_obs(:,ind); % transformation into velocity frame
+    %xd = xd + randn(2,1)*1e-10 - xd_obs; %computing the relative velocity with respect to the obstacle
+    if(isfield(obs{ind},'concaveAngle'))
+        xd = spaceTrafo_concaveCirce(obs{ind}, x, xd, w_obs(ind));
+    else
+        xd = spaceTrafo_ellipseCircle(obs{ind}, x, xd, w_obs(ind));
+    end
+    xd = xd + xd_obs(:,ind); % transforming from velocity to inertial frame
+    %xd_fin = xd
 end
 
 
-
-xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
-
 end
 
-function [xd] = deflectionEllipse(obs, x, xd)
-th_r = obs.th_r;
+
+function [xd] = spaceTrafo_concaveCirce(obs, x, xd, w_obs)
 
 % Recenter 
+x = x - obs.x0;
+
+% Rotation Matrix
+dim = 2;
+if(isfield(obs, 'th_r'))
+    R = rotMatrix(obs.th_r, dim);
+else
+    R = eye(dim);
+end
+
+% Rotatational rate to modify velocity
+if(w_obs)
+        % Rotation from rTheta -> xy
+        R_pos = rotMatrix(x,2);
+
+        dist = norm(x);
+        
+        I = [0;1];
+        % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
+        xd_w = R_pos * I*(w_obs*dist);
+        xd = xd - xd_w;
+else
+    xd_w = 0;
+end
+
+% Transformation of space (Ellipse to unit circle)
+A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
+invA = pinv(A);
+
+% Rotation of everything
+x = R' * x;
+%x = ellipsUnfold(x,[0;0],obs.concaveAngle);
+x = invA*x;
+
+xd = R' * xd;
+xd = ellipsUnfold(xd,[0;0],obs.concaveAngle)
+xd = invA*xd;
+
+% Applyt deflction on Unit Circle 
+xd = deflectionUnitCircle(x, xd);
+
+% Move back to original plane [Stretch - Rotate]
+xd = A *xd;
+xd = ellipsFold(xd,[0;0],obs.concaveAngle);
+xd = R *xd;
+
+xd = xd + xd_w; % Remove velocity due tro rotation
+
+end
+
+
+function [xd] = spaceTrafo_ellipseCircle(obs, x, xd, w_obs)
+
+% Recenter 
+<<<<<<< HEAD
 x = x- obs.x0;
 
 % Rotate 
@@ -135,6 +191,34 @@ R = [cos(th_r),-sin(th_r);
      sin(th_r),cos(th_r)];
  
 % Stretch  
+=======
+x = x - obs.x0;
+
+% Rotation Matrix
+dim = 2;
+if(isfield(obs, 'th_r'))
+    R = rotMatrix(obs.th_r, dim);
+else
+    R = eye(dim);
+end
+
+% Rotatational rate to modify velocity
+if(w_obs)
+        % Rotation from rTheta -> xy
+        R_pos = rotMatrix(x,2);
+
+        dist = norm(x);
+        
+        I = [0;1];
+        % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
+        xd_w = R_pos * I*(w_obs*dist);
+        xd = xd - xd_w;
+else
+    xd_w = 0;
+end
+
+% Transformation of space (Ellipse to unit circle)
+>>>>>>> 8e49294e1a0778f6697a16446a6834dcfc80b31a
 A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
 trafoMat = pinv(A)*R';
 
@@ -142,37 +226,32 @@ trafoMat = pinv(A)*R';
 x = trafoMat*x;
 xd = trafoMat*xd;
 
-xd = deflectionOfInitSys(1, [0;0], x, xd);
+% Applyt deflction on Unit Circle 
+xd = deflectionUnitCircle(x, xd);
 
-% Stretch 
-% Rotate
-
+% Move back to original plane [Stretch - Rotate]
 xd = R*A* xd;
 
+xd = xd + xd_w; % Remove velocity due tro rotation
+
 end
 
+function [xd] = deflectionUnitCircle(x, xd)
+% Unit radius (R = 1), Centerd x0 =[0,0]
 
-function [xd] = deflectionOfInitSys(R, x0, x, xd)
-%x_bar = x-x0;
-x_bar = x;
-R=1;
-r = sqrt(sum(x_bar.^2));
-cosTheta = x_bar(1)/r;
-sinTheta = x_bar(2)/r;
+r = sqrt(sum(x.^2));
+R_theta = rotMatrix(x,2);
 
-R_theta = [cosTheta, -sinTheta;
-           sinTheta, cosTheta];
-       
 u_rTheta = R_theta' *xd;
 
-u_rTheta = [(1-R^2/r^2);(1+R^2/r^2)].*u_rTheta;
-if(r<R)
-    u_rTheta = [R*0.1;0];
+u_rTheta = [(1 - 1/r^2);(1 + 1/r^2)].*u_rTheta;
+if(r<1)
+    u_rTheta = [1;0];
 end
+
 xd = R_theta*u_rTheta;
 
 end
-
 
 function [xd] = source(Q, x0, x)
 % Sink for Q < 0 
@@ -215,4 +294,107 @@ end
 
 function [xd] = rankineOval(h,a,x0,x)
 xd = [0;0];
+end
+
+function [R] = rotMatrix(angleInp, dim)
+if(nargin<2) 
+    dim = 2; % Default dimension
+end
+
+
+if(length(angleInp) == 1)
+    theta = angleInp; % angle is given
+    % Trigonemetric function evaluation
+    cosTheta = cos(theta);
+    sinTheta = sin(theta);
+elseif(length(angleInp) == 2) % Angle input is 2D vector
+    x = angleInp;
+    dist = norm(x);
+    if (dist) % bigger than 0
+        cosSinTheta = x/dist;
+        cosTheta = cosSinTheta(1);
+        sinTheta = cosSinTheta(2);
+    else
+        % Unit matrix
+        cosTheta = 1;
+        sinTheta = 0;
+    end
+else % Define 3D .. - quaternions?
+    fprintf('not defined \n')
+end
+
+% Create Roation matrix
+if (dim == 2)
+    R = [cosTheta, -sinTheta;
+         sinTheta, cosTheta];
+else
+    fprintf('rotMat of dimension=%d no implemented \n', dim);
+    R = eye(dim);
+end
+end
+
+
+function x = ellipsUnfold(x, x0, concaveAng)
+x = x-x0; % center
+
+normX = sqrt(sum(x.^2,1));
+
+phi = atan2(x(2,:), x(1,:))
+%phi = phi - (phi>pi)*2*pi
+
+phi_prime = unfoldFunction_lin(phi, concaveAng); % apply fold
+
+x = [cos(phi_prime);sin(phi_prime)].*normX;
+
+x = x +x0; % move initial posiiton 
+
+end
+
+
+function phi = unfoldFunction_lin(phi, concaveAng)
+absPhi = abs(phi);
+
+for i = 1:length(absPhi)
+    if absPhi(i) < concaveAng/2
+        m = (absPhi(i)*concaveAng/pi);
+        phi(i) = sign(phi(i))./m;
+    else
+        m = (2-concaveAng/pi);
+        q = (concaveAng-pi);
+        phi(i) = sign(phi(i)).*(1/m*(absPhi(i)-q));
+    end
+end
+end
+
+function x = ellipsFold(x, x0, concaveAng)
+x = x-x0; % center
+
+normX = sqrt(sum(x.^2,1));
+
+phi = atan2(x(2,:), x(1,:));
+%phi = phi - (phi>pi)*2*pi
+
+phi_prime = foldFunction_lin(phi, concaveAng); % apply fold
+
+x = [cos(phi_prime);sin(phi_prime)].*normX;
+
+x = x +x0; % move initial posiiton 
+
+end
+
+
+function phi = foldFunction_lin(phi, concaveAng)
+absPhi = abs(phi);
+
+for i = 1:length(absPhi)
+    if absPhi(i) < pi/2
+        m = (absPhi(i)*concaveAng/pi);
+        phi(i) = sign(phi(i)).*m;
+    else
+        m = (2-concaveAng/pi);
+        q = (concaveAng-pi);
+        phi(i) = sign(phi(i)).*(m*absPhi(i)+q);
+    end
+end
+
 end

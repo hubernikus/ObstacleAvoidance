@@ -99,13 +99,6 @@ end
 %plot(x_obs_sf(1,:,2),x_obs_sf(2,:,2),'ro-')
 %plot(x_obs_sf(1,1,2),x_obs_sf(2,1,2),'kx-')
 
-if collision 
-    plot(x0(1), x0(2), 'kx', 'Linewidth', 10);
-    %text(x0(1), x0(2), '!!! Collision');
-    fprintf('Collision detected at [%3.2f,%3.3f] \n',x0); 
-%else
-%    plot(x0(1), x0(2), 'x','color','k', 'Linewidth', 1);
-end
 
 
 end
