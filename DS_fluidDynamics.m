@@ -179,7 +179,6 @@ obs{i}.perturbation.dx = [-1;2];
 obs{i}.perturbation.w = 1;  
 
 % Start simulation
-normX
 i=2; % object 2
 obs{i}.a = [2;3];
 obs{i}.p = [1;1];

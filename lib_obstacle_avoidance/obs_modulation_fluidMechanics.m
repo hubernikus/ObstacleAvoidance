@@ -183,15 +183,15 @@ end
 function [xd] = spaceTrafo_ellipseCircle(obs, x, xd, w_obs)
 
 % Recenter 
-<<<<<<< HEAD
-x = x- obs.x0;
-
-% Rotate 
-R = [cos(th_r),-sin(th_r);
-     sin(th_r),cos(th_r)];
- 
-% Stretch  
-=======
+%<<<<<<< HEAD
+% x = x- obs.x0;
+% 
+% % Rotate 
+% R = [cos(th_r),-sin(th_r);
+%      sin(th_r),cos(th_r)];
+%  
+% % Stretch  
+% =======
 x = x - obs.x0;
 
 % Rotation Matrix
@@ -218,7 +218,7 @@ else
 end
 
 % Transformation of space (Ellipse to unit circle)
->>>>>>> 8e49294e1a0778f6697a16446a6834dcfc80b31a
+%>>>>>>> 8e49294e1a0778f6697a16446a6834dcfc80b31a
 A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
 trafoMat = pinv(A)*R';
 
