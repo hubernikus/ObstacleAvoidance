@@ -110,15 +110,28 @@ end
 
 
 for ind = indDist
-
-    xd = xd  - xd_obs(:,ind); % transformation into velocity frame
-    %xd = xd + randn(2,1)*1e-10 - xd_obs; %computing the relative velocity with respect to the obstacle
+    
+    % TODO; object and rotation opposit... what doo..?!?!?
+    % Only include relative veloctiy if its moving towards object
+    if(and(dot(xd_obs(:,ind), (x-obs{ind}.x0)) > 0 ,... % obstacle moving towards
+            norm(xd_obs(:,ind)) > norm(xd))) % not moving faster than object -- moving into it 
+        xd_obsFrame = xd_obs(:,ind);
+    else
+        xd_obsFrame = zeros(2,1);
+    end
+    
+    %xd_obsFrame = xd_obs(:,ind);
+    xd = xd  - xd_obsFrame; % transformation into velocity frame
+    
+    xd = xd + randn(2,1)*1e-10; % Adding little noise, for instablities
+    
     if(isfield(obs{ind},'concaveAngle'))
         xd = spaceTrafo_concaveCirce(obs{ind}, x, xd, w_obs(ind));
     else
         xd = spaceTrafo_ellipseCircle(obs{ind}, x, xd, w_obs(ind));
     end
-    xd = xd + xd_obs(:,ind); % transforming from velocity to inertial frame
+    
+    xd = xd + xd_obsFrame; % transforming from velocity to inertial frame
     %xd_fin = xd
 end
 
@@ -146,10 +159,18 @@ if(w_obs)
 
         dist = norm(x);
         
-        I = [0;1];
+        I = [0;1]; 
+        
         % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
         xd_w = R_pos * I*(w_obs*dist);
-        xd = xd - xd_w;
+        
+            % Only include relative veloctiy if its moving towards object
+        if( and( dot(xd_w, x) > 0, ... % obstacle moving towards robo
+                norm(xd_w) > norm(xd) ) )% not moving faster than object -- moving into it 
+             xd = xd - xd_w;
+        else 
+            xd_w = zeros(2,1);
+        end
 else
     xd_w = 0;
 end
@@ -174,6 +195,7 @@ xd = deflectionUnitCircle(x, xd);
 xd = A *xd;
 xd = ellipsFold(xd,[0;0],obs.concaveAngle);
 xd = R *xd;
+
 
 xd = xd + xd_w; % Remove velocity due tro rotation
 
@@ -243,8 +265,10 @@ r = sqrt(sum(x.^2));
 R_theta = rotMatrix(x,2);
 
 u_rTheta = R_theta' *xd;
+% M = diag([(1 - 1/r^2),(1 + 1/r^2)]); % initial fluid dynamics
+M = diag([(1 - 1/r^2),(1)]);
 
-u_rTheta = [(1 - 1/r^2);(1 + 1/r^2)].*u_rTheta;
+u_rTheta = M*u_rTheta;
 if(r<1)
     u_rTheta = [1;0];
 end

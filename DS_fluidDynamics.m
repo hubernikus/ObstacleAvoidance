@@ -22,7 +22,7 @@ end
 
 % Set default simulation parameters
 opt_sim.dt = 0.03; %integration time steps
-opt_sim.i_max = 500; %maximum number of iterations
+opt_sim.i_max = 250; %maximum number of iterations
 opt_sim.tol = 0.05; %convergence tolerance
 opt_sim.plot = true; %enabling the animation
 opt_sim.model = 1; %first order ordinary differential equation
@@ -104,6 +104,50 @@ axis equal;
 
 %% Demo: 2D - moving objects
 close all; clc;
+% 1 movign object.
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+obs{i}.a = [1;5];
+obs{i}.p = [1;1];
+obs{i}.x0 = [10;-4];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 6;
+obs{i}.perturbation.dx = [-1;2];  
+%obs{i}.perturbation.w = 1;  
+
+i=2;
+obs{i}.a = [2;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [13;7];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 30*pi/180;
+
+% Start simulation
+
+opt_sim.obstacle = obs;
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+
+%xlim([-15 15]); ylim([-15 15])
+
+fprintf('End 2D-Simulation \n');
+
+
 %% --- ISSUES....
 fprintf('Start 2D-Simulation \n');
 
@@ -139,8 +183,144 @@ obs{i}.sf = [1.2];
 obs{i}.th_r = -30*pi/180;
 obs{i}.perturbation.t0 = 0;
 obs{i}.perturbation.tf = 6;
-obs{i}.perturbation.dx = [1;-3];  
+obs{i}.perturbation.dx = [-6;0];  
 %obs{i}.perturbation.w = 3;  
+
+opt_sim.obstacle = obs;
+
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+
+%xlim([-15 15]); ylim([-15 15])
+
+fprintf('End 2D-Simulation \n');
+
+
+%% --- ISSUES....
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+
+obs{i}.a = [1;5];
+obs{i}.p = [1;1];
+obs{i}.x0 = [10;-4];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 6;
+obs{i}.perturbation.dx = [-1;2];  
+%obs{i}.perturbation.w = 1;  
+
+% Start simulation
+<<<<<<< HEAD
+=======
+
+>>>>>>> 277d7b2d8983e0cca7f1e76f058f782187f36608
+i=2; % object 2
+obs{i}.a = [2;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [13;7];
+obs{i}.sf = [1.2];
+obs{i}.th_r = -30*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 6;
+obs{i}.perturbation.dx = [-5;-1];  
+%obs{i}.perturbation.w = 3;  
+
+opt_sim.obstacle = obs;
+
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+
+%xlim([-15 15]); ylim([-15 15])
+
+fprintf('End 2D-Simulation \n');
+
+
+%%  Rotating objects
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+
+obs{i}.a = [1;5];
+obs{i}.p = [1;1];
+obs{i}.x0 = [10;6];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 12;
+obs{i}.perturbation.dx = [0;0];  
+obs{i}.perturbation.w = 1;  
+
+
+opt_sim.obstacle = obs;
+
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+
+%xlim([-15 15]); ylim([-15 15])
+
+fprintf('End 2D-Simulation \n');
+
+%%  Rotating objects
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+obs{i}.a = [1;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [4;8];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 12;
+obs{i}.perturbation.dx = [4;-1];  
+obs{i}.perturbation.w = 1;  
+i=2;
+obs{i}.a = [2;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [8;-5];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 20*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 12;
+obs{i}.perturbation.dx = [-1;2];  
+obs{i}.perturbation.w = -2;  
 
 opt_sim.obstacle = obs;
 
@@ -174,7 +354,7 @@ obs{i}.x0 = [10;-4];
 obs{i}.sf = [1.2];
 obs{i}.th_r = 0*pi/180;
 obs{i}.perturbation.t0 = 0;
-obs{i}.perturbation.tf = 6;
+obs{i}.perturbation.tf = 8;
 obs{i}.perturbation.dx = [-1;2];  
 obs{i}.perturbation.w = 1;  
 
@@ -186,7 +366,7 @@ obs{i}.x0 = [13;7];
 obs{i}.sf = [1.2];
 obs{i}.th_r = -30*pi/180;
 obs{i}.perturbation.t0 = 0;
-obs{i}.perturbation.tf = 6;
+obs{i}.perturbation.tf = 8;
 obs{i}.perturbation.dx = [1;-3];  
 obs{i}.perturbation.w = 3;  
 
@@ -199,43 +379,81 @@ Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 
 %xlim([-15 15]); ylim([-15 15])
 
-fprintf('End 2D-Simulation \n');
 
-%% Demo: 2D - moving objects
-%close all; clc;
-
+%%  Constant vel to origin 
 fprintf('Start 2D-Simulation \n');
 
 fn_handle = @(x) linearStableDS(x);
 
-%x0 = randn(2,15)*10; % randomly distributed points
-%N_samples = 20;
-%phi0 = (1:N_samples)/N_samples*2*pi;
-%r0 = 10;
-% x0 = [r0* cos(phi0); r0*sin(phi0)];
-%x0 = [-10;-4];
-x0 = [ones(1,27)*-10 ; -13:1:13];
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+% Place obstacles
+obs = [];
+
+opt_sim.dt = 0.03; %integration time steps
+opt_sim.i_max = 500; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
+
+% obstacle 1
+i=1;
+
+obs{i}.a = [3;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [10;5];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 4;
+obs{i}.perturbation.tf = 12;
+obs{i}.perturbation.dx = [-4;0];  
+%obs{i}.perturbation.w = 1;  
+
+opt_sim.obstacle = obs;
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+
+
+fprintf('End 2D-Simulation \n');
+
+
+%%  Rotating object close to origin 
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+opt_sim.dt = 0.01; %integration time steps
+opt_sim.i_max = 500; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
+
 
 % Place obstacles
 obs = [];
 
 % obstacle 1
-obs{1}.a = [1;3];
-obs{1}.p = [1;1];
-obs{1}.x0 = [10;4];
-obs{1}.sf = [1.2;1.2];
-obs{1}.th_r = -30*pi/180;
+i=1;
 
-obs{1}.perturbation.t0 = 0;
-obs{1}.perturbation.tf = 7;
-obs{1}.perturbation.dx = [-3;0];  
-% Start simulation
+obs{i}.a = [1;5];
+obs{i}.p = [1;1];
+obs{i}.x0 = [6;3];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 12;
+obs{i}.perturbation.dx = [0;0];  
+obs{i}.perturbation.w = 1;  
+
+
 opt_sim.obstacle = obs;
 
 
-fig(1) = figure('name','fluidDynamics_model_movingObj_negx','position',[100 550 560 420]);
-
-
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
 opt_sim.figure = fig(1);
 Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 
@@ -244,51 +462,84 @@ Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 fprintf('End 2D-Simulation \n');
 
 
-%% Demo: 2D - moving objects
-%close all; clc;
-
+%%  2 convex to concave
 fprintf('Start 2D-Simulation \n');
 
 fn_handle = @(x) linearStableDS(x);
 
-%x0 = randn(2,15)*10; % randomly distributed points
-%N_samples = 20;
-%phi0 = (1:N_samples)/N_samples*2*pi;
-%r0 = 10;
-% x0 = [r0* cos(phi0); r0*sin(phi0)];
-%x0 = [-10;-4];
-x0 = [ones(1,27)*-10 ; -13:1:13];
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
 
 % Place obstacles
 obs = [];
 
 % obstacle 1
-obs{1}.a = [1;3];
-obs{1}.p = [1;1];
-obs{1}.x0 = [0;4];
-obs{1}.sf = [1.2;1.2];
-obs{1}.th_r = -30*pi/180;
-obs{1}.concave = 90;
+i=1;
+obs{i}.a = [1;4];
+obs{i}.p = [1;1];
+obs{i}.x0 = [5;-2];
+obs{i}.sf = [1.2];
+obs{i}.th_r = -60*pi/180;
+i=2;
+obs{i}.a = [1;5];
+obs{i}.p = [1;1];
+obs{i}.x0 = [4;3];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 45*pi/180;
 
 
-
-% obs{1}.perturbation.t0 = 0;
-% obs{1}.perturbation.tf = 7;
-% obs{1}.perturbation.dx = [-3;0];  
-% Start simulation
 opt_sim.obstacle = obs;
 
 
-fig(1) = figure('name','fluidDynamics_model_movingObj_negx','position',[100 550 560 420]);
-
-
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
 opt_sim.figure = fig(1);
 Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
 
 %xlim([-15 15]); ylim([-15 15])
 
 fprintf('End 2D-Simulation \n');
-%% Demo: 2D - moving objects
+
+
+%%  2 convex to concave
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 20;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+obs{i}.a = [1;4];
+obs{i}.p = [1;1];
+obs{i}.x0 = [8;-2];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 60*pi/180;
+i=2;
+obs{i}.a = [1;5];
+obs{i}.p = [1;1];
+obs{i}.x0 = [7;3];
+obs{i}.sf = [1.2];
+obs{i}.th_r = -45*pi/180;
+
+
+opt_sim.obstacle = obs;
+
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+
+%xlim([-15 15]); ylim([-15 15])
+
+fprintf('End 2D-Simulation \n');
+
+%% Demo: concave
 %close all; clc;
 
 fprintf('Start 2D-Simulation \n');
@@ -329,6 +580,7 @@ plot(obs{1}.x0(1),obs{1}.x0(2), 'ro')
 fprintf('End 2D-Simulation \n');
 
 
+fprintf('End 2D-Simulation \n');
 %%
 close all
 
