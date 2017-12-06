@@ -102,23 +102,25 @@ end
 % Find sort object descending distance
 dist2= zeros(1,N);
 
-for ii = 1:N
+for ii = 1:N % todo: better distance metrics (surface object)
     dist2(ii) = sum((x-obs{ii}.x0).^2);
 end
-[dist,indDist] = sort(dist2,'descend');
+[dist,indDistObj] = sort(dist2,'descend');
 
 
 
-for ind = indDist
+for ind = indDistObj
     
-    % TODO; object and rotation opposit... what doo..?!?!?
+    % TODO; object and rotation opposit... what doo..?!?!? more
+    % efficient!!!
     % Only include relative veloctiy if its moving towards object
-    if(and(dot(xd_obs(:,ind), (x-obs{ind}.x0)) > 0 ,... % obstacle moving towards
-            norm(xd_obs(:,ind)) > norm(xd))) % not moving faster than object -- moving into it 
-        xd_obsFrame = xd_obs(:,ind);
-    else
+    if(and(dot(xd_obs(:,ind), (x-obs{ind}.x0)) < 0 ,...  % obstacle moving away from robo
+           min(sign(xd).*(xd-xd_obs(:,ind))<0) ) ) % object is moving slower thant robot in direction
         xd_obsFrame = zeros(2,1);
+    else
+        xd_obsFrame = xd_obs(:,ind);
     end
+    xd_obsFrame = zeros(2,1);
     
     %xd_obsFrame = xd_obs(:,ind);
     xd = xd  - xd_obsFrame; % transformation into velocity frame
@@ -164,13 +166,15 @@ if(w_obs)
         % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
         xd_w = R_pos * I*(w_obs*dist);
         
-            % Only include relative veloctiy if its moving towards object
-        if( and( dot(xd_w, x) > 0, ... % obstacle moving towards robo
-                norm(xd_w) > norm(xd) ) )% not moving faster than object -- moving into it 
-             xd = xd - xd_w;
-        else 
-            xd_w = zeros(2,1);
-        end
+        % TODO; object and rotation opposit... what doo..?!?!?
+        % Only include relative veloctiy if its moving towards object
+%         if( and( dot(xd_w, x) > 0, ... % obstacle moving towards robo
+%                 norm(xd_w) > norm(xd) ) )% not moving faster than object -- moving into it 
+%              xd = xd - xd_w;
+%         else 
+%             xd_w = zeros(2,1);
+%         end
+        xd = xd - xd_w;
 else
     xd_w = 0;
 end
