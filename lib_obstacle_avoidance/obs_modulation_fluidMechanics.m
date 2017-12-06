@@ -135,7 +135,7 @@ R = [cos(th_r),-sin(th_r);
      sin(th_r),cos(th_r)];
  
 % Stretch  
-A = diag([obs.a(1)*obs.sf(1),obs.a(2)*obs.sf(2)]);
+A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
 trafoMat = pinv(A)*R';
 
 % Rotation of everything
