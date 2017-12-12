@@ -246,7 +246,7 @@ while true
            %xd(:,iSim,j) = obs_modulation_rotation(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
             %xd(:,iSim,j) = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
                        
-           [xd(:,iSim,j) b_contour(j)] = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
+           [xd(:,iSim,j), b_contour(j)] = obs_modulation_fluidMechanics(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
            
            %xd(:,iSim,j) = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs);
         end
