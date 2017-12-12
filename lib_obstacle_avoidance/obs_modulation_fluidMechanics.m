@@ -101,12 +101,18 @@ end
 % Find sort object descending distance
 dist2= zeros(1,N);
 
+<<<<<<< HEAD
 for ii = 1:N
     dist2(ii) = normalizedDistanceSqr(obs{ii}, x);
     %dist2(ii) = sum((x-obs{ii}.x0).^2);
+=======
+for ii = 1:N % todo: better distance metrics (surface object)
+    dist2(ii) = sum((x-obs{ii}.x0).^2);
+>>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
 end
-[dist,indDist] = sort(dist2,'descend');
+[dist,indDistObj] = sort(dist2,'descend');
 
+<<<<<<< HEAD
 for ind = indDist
     % TODO; object and rotation opposit... what doo..?!?!?
     xd_obsFrame = zeros(2,1);
@@ -125,6 +131,26 @@ for ind = indDist
 
     xd = xd -xd_obsFrame; % transformation into velocity frame
 
+=======
+
+
+for ind = indDistObj
+    
+    % TODO; object and rotation opposit... what doo..?!?!? more
+    % efficient!!!
+    % Only include relative veloctiy if its moving towards object
+    if(and(dot(xd_obs(:,ind), (x-obs{ind}.x0)) < 0 ,...  % obstacle moving away from robo
+           min(sign(xd).*(xd-xd_obs(:,ind))<0) ) ) % object is moving slower thant robot in direction
+        xd_obsFrame = zeros(2,1);
+    else
+        xd_obsFrame = xd_obs(:,ind);
+    end
+    xd_obsFrame = zeros(2,1);
+    
+    %xd_obsFrame = xd_obs(:,ind);
+    xd = xd  - xd_obsFrame; % transformation into velocity frame
+    
+>>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
     xd = xd + randn(2,1)*1e-10; % Adding little noise, for instablities
 
     if(isfield(obs{ind},'concaveAngle'))
@@ -196,6 +222,7 @@ if(w_obs) % object is rotating
         I = [0;1];
 
         % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
+<<<<<<< HEAD
         xd_w = R_pos * I*(w_obs*normX);
 
         % Only include relative veloctiy if its moving towards object
@@ -206,6 +233,21 @@ if(w_obs) % object is rotating
             xd_w = zeros(2,1);
         end
     end
+=======
+        xd_w = R_pos * I*(w_obs*dist);
+        
+        % TODO; object and rotation opposit... what doo..?!?!?
+        % Only include relative veloctiy if its moving towards object
+%         if( and( dot(xd_w, x) > 0, ... % obstacle moving towards robo
+%                 norm(xd_w) > norm(xd) ) )% not moving faster than object -- moving into it 
+%              xd = xd - xd_w;
+%         else 
+%             xd_w = zeros(2,1);
+%         end
+        xd = xd - xd_w;
+else
+    xd_w = 0;
+>>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
 end
 
 % Transformation of space (Ellipse to unit circle)
@@ -236,7 +278,20 @@ end
 
 function [xd] = spaceTrafo_ellipseCircle(obs, x, xd, w_obs)
 
+<<<<<<< HEAD
 % Recenter
+=======
+% Recenter 
+%<<<<<<< HEAD
+% x = x- obs.x0;
+% 
+% % Rotate 
+% R = [cos(th_r),-sin(th_r);
+%      sin(th_r),cos(th_r)];
+%  
+% % Stretch  
+% =======
+>>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
 x = x - obs.x0;
 
 % Rotation Matrix
@@ -270,6 +325,7 @@ else
 end
 
 % Transformation of space (Ellipse to unit circle)
+%>>>>>>> 8e49294e1a0778f6697a16446a6834dcfc80b31a
 A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
 trafoMat = pinv(A)*R';
 

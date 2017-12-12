@@ -224,7 +224,6 @@ obs{i}.perturbation.dx = [-1;2];
 %obs{i}.perturbation.w = 1;  
 
 % Start simulation
-
 i=2; % object 2
 obs{i}.a = [2;3];
 obs{i}.p = [1;1];
@@ -445,7 +444,7 @@ obs{i}.th_r = 0*pi/180;
 obs{i}.perturbation.t0 = 0;
 obs{i}.perturbation.tf = 12;
 obs{i}.perturbation.dx = [0;0];  
-obs{i}.perturbation.w = 1;  
+obs{i}.perturbation.w = 1;  x
 
 
 opt_sim.obstacle = obs;
