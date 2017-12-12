@@ -9,7 +9,7 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 %
 % This function computes the sufficient modulation
 % due to the presence of obstacle(s) so that the generated trajectories
-% do not penetrate into the obstacles. 
+% do not penetrate into the obstacles.
 %
 % To avoid struggling with the MATLAB symbolic toolbox, and for the sake of
 % simplicity, the provided source code can only be used to avoid obstacles
@@ -17,14 +17,14 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 %           \Gamma(xt):   \sum_{i=1}^d (xt_i/a_i)^(2p_i) = 1
 % For other forms of obstacle shape, it is necessary to modify this file to
 % properly compute the matrix of eigenvalues and eigenvectors of the
-% dynamic modulation matrix. 
+% dynamic modulation matrix.
 %
 % The function is called using:
 %       [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,xd_obs)
 %
 %
 % Inputs -----------------------------------------------------------------
-%
+%U
 %   o x:         d x 1 column vector corresponding to the current robot state
 %                probabilities of the K GMM components.
 %
@@ -34,21 +34,21 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 %                presented obstacles. For example, obs{i} provides the
 %                properties of the i-th obstacle. Each obs{i} is a
 %                structure variable, and should contains at least the
-%                following properties: 
+%                following properties:
 %           - .a:    The ellipsoid length scale (e.g. [1;1] for a 2D circle.
 %           - .p:    The ellipsoid power terms (e.g. [1;1] for a 2D circle.
 %           - .x0:   The ellipsoid reference point (e.g. [0;0]).
 %           - .sf:   The safety factor (optional, default = 1).
 %           - .tailEffect (optional, default = true): If it is set to true,
 %                    the obstacle modifies the motion even when the it is
-%                    moving away from the obstacle. 
+%                    moving away from the obstacle.
 %           - .rho (optional, default = 1.0): Sets the reactivity
 %                    parameter. The larger the rho, the earlier the robot
-%                    responds to the presence of the obstacle. 
+%                    responds to the presence of the obstacle.
 %           - .th_r: The obstacle rotation with respect to the global
-%                    frame of reference (optional, default = 0.0 rad). 
+%                    frame of reference (optional, default = 0.0 rad).
 %           - .partition: Defines the partition of the ellipsoid (optional,
-%                    default = [-pi pi]) 
+%                    default = [-pi pi])
 %           Please run 'Tutorial_Obstacle_Avoidance.m' for further information
 %           on how to use this obstacle avoidance module.
 %
@@ -66,8 +66,8 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 %                contouring stage or not.
 %
 %   o M:         d x d matrix representing the dynamic modulation matrix.
-% 
-% 
+%
+%
 % This code is writen based on the following paper:
 %     S.M. Khansari Zadeh and A. Billard, "A Dynamical System Approach to
 %     Realtime Obstacle Avoidance", Autonomous Robots, 2012
@@ -79,7 +79,6 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 % intersection objects -- literature
 % Convex objects -- literature
 % Convex objects -- space transformation... Airfoil.
-%
 %
 
 N = length(obs); %number of obstacles
@@ -103,34 +102,37 @@ end
 dist2= zeros(1,N);
 
 for ii = 1:N
-    dist2(ii) = sum((x-obs{ii}.x0).^2);
+    dist2(ii) = normalizedDistanceSqr(obs{ii}, x);
+    %dist2(ii) = sum((x-obs{ii}.x0).^2);
 end
 [dist,indDist] = sort(dist2,'descend');
 
-
-
 for ind = indDist
-    
     % TODO; object and rotation opposit... what doo..?!?!?
+    xd_obsFrame = zeros(2,1);
+    
+    % Positibilities
+    % 
     % Only include relative veloctiy if its moving towards object
-    if(and(dot(xd_obs(:,ind), (x-obs{ind}.x0)) > 0 ,... % obstacle moving towards
-            norm(xd_obs(:,ind)) > norm(xd))) % not moving faster than object -- moving into it 
-        xd_obsFrame = xd_obs(:,ind);
-    else
-        xd_obsFrame = zeros(2,1);
+    if(dot(xd_obs(:,ind), (x-obs{ind}.x0)) > 0 ) %,... % obstacle moving towards
+         %(or(sign(xd_obs(1))*(xd_obs(1,ind)-xd(1)), ...
+          %sign(xd_obs(1))*(xd_obs(1,ind)-xd(1))) ))) % robo moving slower than obstacle
+            xd_obsFrame = xd_obs(:,ind);
+        %end
     end
-    
-    %xd_obsFrame = xd_obs(:,ind);
-    xd = xd  - xd_obsFrame; % transformation into velocity frame
-    
+
+    %xd_obsFrame = xd_obs(:,ind); % TODO remove this line, as soon as if condition works
+
+    xd = xd -xd_obsFrame; % transformation into velocity frame
+
     xd = xd + randn(2,1)*1e-10; % Adding little noise, for instablities
-    
+
     if(isfield(obs{ind},'concaveAngle'))
         xd = spaceTrafo_concaveCirce(obs{ind}, x, xd, w_obs(ind));
     else
         xd = spaceTrafo_ellipseCircle(obs{ind}, x, xd, w_obs(ind));
     end
-    
+
     xd = xd + xd_obsFrame; % transforming from velocity to inertial frame
     %xd_fin = xd
 end
@@ -138,10 +140,40 @@ end
 
 end
 
+function dx = normalizedDistanceSqr(obs, x)
+% Cacluated normalized distance to object dx
+
+dim = size(x,1); % get dimension
+
+% Center around object
+x =  x - obs.x0;
+
+% Rotation to align with axis
+if(isfield(obs, 'th_r'))
+    R = rotMatrix(obs.th_r, dim);
+else
+    R = eye(dim);
+end
+x = R*x;
+
+% Linear transformation to unit circle
+A = diag([obs.a(1),obs.a(2)]); %A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
+x = A\x;
+
+% Get distance to surface
+normX =  sqrt(sum(x.^2));
+x = x - [x(1)/normX;x(2)/normX];
+
+% Normalized distance square
+x = A*x;
+
+dx = sum(x.^2);
+
+end
 
 function [xd] = spaceTrafo_concaveCirce(obs, x, xd, w_obs)
 
-% Recenter 
+% Recenter
 x = x - obs.x0;
 
 % Rotation Matrix
@@ -152,31 +184,32 @@ else
     R = eye(dim);
 end
 
-% Rotatational rate to modify velocity
-if(w_obs)
+% Rotatational rate to modify relative velocity
+normX = norm(x);
+
+xd_w = zeros(2,1);
+if(w_obs) % object is rotating
+    if(normX < obs.sf(1)*min(obs.a)) % only concider if in rotation radius
         % Rotation from rTheta -> xy
         R_pos = rotMatrix(x,2);
+    
+        I = [0;1];
 
-        dist = norm(x);
-        
-        I = [0;1]; 
-        
         % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
-        xd_w = R_pos * I*(w_obs*dist);
-        
-            % Only include relative veloctiy if its moving towards object
-        if( and( dot(xd_w, x) > 0, ... % obstacle moving towards robo
-                norm(xd_w) > norm(xd) ) )% not moving faster than object -- moving into it 
+        xd_w = R_pos * I*(w_obs*normX);
+
+        % Only include relative veloctiy if its moving towards object
+        if(dot(xd_w, x) > 0) % obstacle moving towards robo
+               % norm(xd_w) > norm(xd) ) )% not moving faster than object -- moving into it
              xd = xd - xd_w;
-        else 
+        else
             xd_w = zeros(2,1);
         end
-else
-    xd_w = 0;
+    end
 end
 
 % Transformation of space (Ellipse to unit circle)
-A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
+A = obs.sf(1)*diag(obs.a);
 invA = pinv(A);
 
 % Rotation of everything
@@ -188,14 +221,13 @@ xd = R' * xd;
 xd = ellipsUnfold(xd,[0;0],obs.concaveAngle)
 xd = invA*xd;
 
-% Applyt deflction on Unit Circle 
+% Applyt deflction on Unit Circle
 xd = deflectionUnitCircle(x, xd);
 
 % Move back to original plane [Stretch - Rotate]
 xd = A *xd;
 xd = ellipsFold(xd,[0;0],obs.concaveAngle);
 xd = R *xd;
-
 
 xd = xd + xd_w; % Remove velocity due tro rotation
 
@@ -204,7 +236,7 @@ end
 
 function [xd] = spaceTrafo_ellipseCircle(obs, x, xd, w_obs)
 
-% Recenter 
+% Recenter
 x = x - obs.x0;
 
 % Rotation Matrix
@@ -221,11 +253,18 @@ if(w_obs)
         R_pos = rotMatrix(x,2);
 
         dist = norm(x);
-        
+
         I = [0;1];
-        % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
         xd_w = R_pos * I*(w_obs*dist);
-        xd = xd - xd_w;
+
+        % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
+        % Only include relative veloctiy if its moving towards object
+        %if( and( dot(xd_w, x) > 0, ... % obstacle moving towards robo
+        %            (xd_w) > xd_w ) )% not moving faster than object in each direction
+            xd = xd - xd_w;
+        %else
+        %            xd_w = zeros(2,1);
+        %end
 else
     xd_w = 0;
 end
@@ -238,7 +277,7 @@ trafoMat = pinv(A)*R';
 x = trafoMat*x;
 xd = trafoMat*xd;
 
-% Applyt deflction on Unit Circle 
+% Applyt deflction on Unit Circle
 xd = deflectionUnitCircle(x, xd);
 
 % Move back to original plane [Stretch - Rotate]
@@ -255,7 +294,7 @@ r = sqrt(sum(x.^2));
 R_theta = rotMatrix(x,2);
 
 u_rTheta = R_theta' *xd;
-% M = diag([(1 - 1/r^2),(1 + 1/r^2)]); % initial fluid dynamics
+%M = diag([(1 - 1/r^2),(1 + 1/r^2)]); % initial fluid dynamics
 M = diag([(1 - 1/r^2),(1)]);
 
 u_rTheta = M*u_rTheta;
@@ -268,7 +307,7 @@ xd = R_theta*u_rTheta;
 end
 
 function [xd] = source(Q, x0, x)
-% Sink for Q < 0 
+% Sink for Q < 0
 x_bar = x-x0;
 r = sqrt(sum(x_bar.^2));
 cosTheta = x_bar(1)/r;
@@ -311,7 +350,7 @@ xd = [0;0];
 end
 
 function [R] = rotMatrix(angleInp, dim)
-if(nargin<2) 
+if(nargin<2)
     dim = 2; % Default dimension
 end
 
@@ -360,7 +399,7 @@ phi_prime = unfoldFunction_lin(phi, concaveAng); % apply fold
 
 x = [cos(phi_prime);sin(phi_prime)].*normX;
 
-x = x +x0; % move initial posiiton 
+x = x +x0; % move initial posiiton
 
 end
 
@@ -392,7 +431,7 @@ phi_prime = foldFunction_lin(phi, concaveAng); % apply fold
 
 x = [cos(phi_prime);sin(phi_prime)].*normX;
 
-x = x +x0; % move initial posiiton 
+x = x +x0; % move initial posiiton
 
 end
 

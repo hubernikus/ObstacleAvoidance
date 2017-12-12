@@ -1,6 +1,8 @@
 function xd = linearStableDS(x)
 % A = - I ; 
-xd = - x;
+x0 = [0;0];
+
+xd = - (x-x0);
 
 end
 

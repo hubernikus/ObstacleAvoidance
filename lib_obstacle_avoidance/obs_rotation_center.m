@@ -11,7 +11,7 @@ collision = false; % ONLY for 2 objects
 [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs_list,50);
 
 % Check wheter objects intersect -- ONLY 2D
-for obs = 1:size(obs_list,2)
+for obs = 1:size(obs_list,3)
     %x_obs_sf(:,:,obs) =x_obs_sf_sing;
     
     

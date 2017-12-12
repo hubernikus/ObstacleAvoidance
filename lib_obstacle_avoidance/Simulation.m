@@ -348,6 +348,7 @@ while true
             % TODO: check tis
             plot(x(1,end,ii) , x(2,end,ii) , 'kx', 'Linewidth', 10);
             fprintf('Collision detected at [%3.2f,%3.3f] \n',x(:,end,ii) ); 
+            %pause;
         end
     end
     
