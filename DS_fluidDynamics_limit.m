@@ -19,6 +19,10 @@ end
 if isempty(regexp(path,['DynamicalSystems' pathsep], 'once'))
     addpath([pwd, '/DynamicalSystems']);
 end
+% adding simulation tool-folder to path
+if isempty(regexp(path,['lib_simulation_tools' pathsep], 'once'))
+    addpath([pwd, '/lib_simulation_tools']);
+end
 
 % Set default simulation parameters
 opt_sim.dt = 0.03; %integration time steps

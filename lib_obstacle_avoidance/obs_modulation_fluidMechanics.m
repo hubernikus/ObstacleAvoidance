@@ -23,7 +23,7 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 %       [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,xd_obs)
 %
 %
-% Inputs -----------------------------------------------------------------
+% Inputs ----------q-------------------------------------------------------
 %U
 %   o x:         d x 1 column vector corresponding to the current robot state
 %                probabilities of the K GMM components.
@@ -101,14 +101,9 @@ end
 % Find sort object descending distance
 dist2= zeros(1,N);
 
-<<<<<<< HEAD
 for ii = 1:N
     dist2(ii) = normalizedDistanceSqr(obs{ii}, x);
     %dist2(ii) = sum((x-obs{ii}.x0).^2);
-=======
-for ii = 1:N % todo: better distance metrics (surface object)
-    dist2(ii) = sum((x-obs{ii}.x0).^2);
->>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
 end
 [dist,indDistObj] = sort(dist2,'descend');
 
