@@ -114,7 +114,12 @@ obs{i}.perturbation.dx = [-6;0];
 
 opt_sim.obstacle = obs;
 
-
+% Define function to use
+% opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_fluidMechanics(x,xd,obs,b_contour, varargin);
+% opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
+% % % opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid_adapted(x,xd,obs,b_contour,varargin)
+% opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid_adapted(x,xd,obs,b_contour,varargin)
+opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_rotation(x,xd,obs,b_contour,varargin)
 fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
 opt_sim.figure = fig(1);
 Simulation(x0,[],fn_handle,opt_sim); % NOT good IC

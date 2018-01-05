@@ -1,4 +1,4 @@
-function [xd, phi_c, h_x, kappa, velTowardsBody] = obs_modulation_rotation(x,xd,obs,xd_obs, plotFigure)
+function [xd, b_contour, M, compTime] = obs_modulation_rotation(x, xd, obs, b_contour, varargin)
 %
 % Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %
@@ -74,23 +74,54 @@ function [xd, phi_c, h_x, kappa, velTowardsBody] = obs_modulation_rotation(x,xd,
 %     Realtime Obstacle Avoidance", Autonomous Robots, 2012
 %
 %%
-if  nargin < 5
-    plotFigure = false; 
-end
+tic; 
+
+plotFigure = false;
+
 
 N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
+xd_dx_obs = zeros(d,N);
+xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
+
+% Weird behavior of varargin when creating function handle, this can be
+% removed by adding this line. 
+switch(class(varargin{1}))
+     case 'cell'
+         varargin = varargin{1};
+end    
+
+for i=1:length(varargin)
+    if ~isempty(varargin)
+        switch i
+            case 1
+                xd_dx_obs = varargin{1};
+            case 2
+                w_obs = varargin{2};
+                if d==2 && size(w_obs,1)==1 && size(w_obs,2)==N
+                    for n=1:N
+                        x_tmp = x-obs{n}.x0;
+                        xd_w_obs(:,n) = [-x_tmp(2);x_tmp(1)]*w_obs(n); %cross(w,x_tmp)
+                    end
+                end
+                if d==3 && length(w_obs)==d %supporting situation
+                    xd_w_obs = cross(w_obs,x_tmp);
+                end
+        end
+    end
+end
 
 if(N>1)
-    warning('Module needs to be updated for more than 1 Object!!!')
+    %warning('Module needs to be updated for more than 1 Object!!!');
+    xd_dx_obs = xd_dx_obs(:,1);
 end
 
 if(d~=2)
     warning('Module only for 2D');
 end
 
-xd = xd-xd_obs; %computing the relative velocity with respect to ALL obstacle
+xd = xd-xd_dx_obs; %computing the relative velocity with respect to ALL obstacle
 
 
 if plotFigure
@@ -208,8 +239,8 @@ kappa = kappa0 ^ ((deltaPhi-pi)/phi0 * (d0/d)^nd);
 %kappa = 1;
 
 % Calculate final modulation
-%M = kappa*R
-M = R;
+M = kappa*R;
+%M = R;
 
 if plotFigure; plot([x(1),x(1)+1.1*xd(1)],[x(2),x(2)+1.1*xd(2)],'b'); end
 
@@ -217,11 +248,12 @@ xd = M*xd; % velocity modulation
 
 if plotFigure; plot([x(1),x(1)+xd(1)],[x(2),x(2)+xd(2)],'m'); end
 
-xd = xd + xd_obs ; % transforming back the velocity into the global coordinate system
+xd = xd + xd_dx_obs ; % transforming back the velocity into the global coordinate system
 
 % velocity speed up/slow down is applied after...
 xd = kappa*eye(d)*xd;
 
+compTime = toc;
 end
 
 function plotLine(x0, phi, d,col, name)

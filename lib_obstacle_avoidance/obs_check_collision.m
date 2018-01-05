@@ -1,13 +1,10 @@
 function [collision] = obs_check_collision(obs_list, x0)
 % For the moment only implemented in 2D
 
-%merge_obs = [];
-
 collision = false; % ONLY for 2 objects
 
-% figure; 
-% plot(x_obs_sf(1,:,1),x_obs_sf(2,:,1),'k--'); hold on;
-% plot(x_obs_sf(1,:,2),x_obs_sf(2,:,2),'k--')
+if length(obs_list) == 0; return; end;
+
 [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs_list,50);
 
 % Check wheter objects intersect -- ONLY 2D

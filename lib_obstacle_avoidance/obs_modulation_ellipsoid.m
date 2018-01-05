@@ -1,4 +1,4 @@
-function [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,varargin)
+function [xd, b_contour, M, compTime] = obs_modulation_ellipsoid(x,xd,obs,b_contour,varargin)
 %
 % Obstacle avoidance module: Version 1.2, issued on July 30, 2015
 %
@@ -74,12 +74,21 @@ function [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,varargin
 %     Realtime Obstacle Avoidance", Autonomous Robots, 2012
 %
 %%
+tic;
+
 N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
 
 xd_dx_obs = zeros(d,N);
 xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
+
+% Weird behavior of varargin when creating function handle, this can be
+% removed by adding this line. 
+switch(class(varargin{1}))
+     case 'cell'
+         varargin = varargin{1};
+end    
 
 for i=1:length(varargin)
     if ~isempty(varargin)
@@ -100,8 +109,6 @@ for i=1:length(varargin)
         end
     end
 end
-
-
 
 if d==3
     E = zeros(d,d+1,N);
@@ -197,6 +204,8 @@ else
 end
 
 xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
+
+compTime = toc;
 
 function [E Gamma] = compute_basis_matrix(d,x_t,obs)
 % For an arbitrary shap, the next two lines are used to find the shape segment

@@ -1,4 +1,4 @@
-function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,varargin)
+function [xd, b_contour, M, computationalTime] = obs_modulation_fluidMechanics(x, xd, obs, b_contour, varargin)
 %
 % Obstacle avoidance module: Version 1.2, issued on July 30, 2015
 %
@@ -23,8 +23,8 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 %       [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,xd_obs)
 %
 %
-% Inputs ----------q-------------------------------------------------------
-%U
+% Inputs -----------------------------------------------------------------
+%
 %   o x:         d x 1 column vector corresponding to the current robot state
 %                probabilities of the K GMM components.
 %
@@ -80,12 +80,23 @@ function [xd b_contour M] = obs_modulation_fluidMechanics(x,xd,obs,b_contour,var
 % Convex objects -- literature
 % Convex objects -- space transformation... Airfoil.
 %
+tic;
+
+M = eye(2);
 
 N = length(obs); %number of obstacles
 d = size(x,1);
 
 xd_obs = zeros(2,N);
 w_obs = zeros(2,N);
+
+% Weird behavior of varargin when creating function handle, this can be
+% removed by adding this line. 
+switch(class(varargin{1}))
+     case 'cell'
+         varargin = varargin{1};
+end    
+
 
 for i=1:length(varargin)
     if ~isempty(varargin)
@@ -105,10 +116,9 @@ for ii = 1:N
     dist2(ii) = normalizedDistanceSqr(obs{ii}, x);
     %dist2(ii) = sum((x-obs{ii}.x0).^2);
 end
-[dist,indDistObj] = sort(dist2,'descend');
+[~,indDistObj] = sort(dist2,'descend');
 
-<<<<<<< HEAD
-for ind = indDist
+for ind = indDistObj
     % TODO; object and rotation opposit... what doo..?!?!?
     xd_obsFrame = zeros(2,1);
     
@@ -121,31 +131,13 @@ for ind = indDist
             xd_obsFrame = xd_obs(:,ind);
         %end
     end
+    
+    
 
     %xd_obsFrame = xd_obs(:,ind); % TODO remove this line, as soon as if condition works
 
     xd = xd -xd_obsFrame; % transformation into velocity frame
 
-=======
-
-
-for ind = indDistObj
-    
-    % TODO; object and rotation opposit... what doo..?!?!? more
-    % efficient!!!
-    % Only include relative veloctiy if its moving towards object
-    if(and(dot(xd_obs(:,ind), (x-obs{ind}.x0)) < 0 ,...  % obstacle moving away from robo
-           min(sign(xd).*(xd-xd_obs(:,ind))<0) ) ) % object is moving slower thant robot in direction
-        xd_obsFrame = zeros(2,1);
-    else
-        xd_obsFrame = xd_obs(:,ind);
-    end
-    xd_obsFrame = zeros(2,1);
-    
-    %xd_obsFrame = xd_obs(:,ind);
-    xd = xd  - xd_obsFrame; % transformation into velocity frame
-    
->>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
     xd = xd + randn(2,1)*1e-10; % Adding little noise, for instablities
 
     if(isfield(obs{ind},'concaveAngle'))
@@ -158,6 +150,7 @@ for ind = indDistObj
     %xd_fin = xd
 end
 
+computationalTime = toc;
 
 end
 
@@ -217,7 +210,6 @@ if(w_obs) % object is rotating
         I = [0;1];
 
         % xd_w = R_pos * I*(w_obs*dist*safety) -- expected correct!
-<<<<<<< HEAD
         xd_w = R_pos * I*(w_obs*normX);
 
         % Only include relative veloctiy if its moving towards object
@@ -228,21 +220,6 @@ if(w_obs) % object is rotating
             xd_w = zeros(2,1);
         end
     end
-=======
-        xd_w = R_pos * I*(w_obs*dist);
-        
-        % TODO; object and rotation opposit... what doo..?!?!?
-        % Only include relative veloctiy if its moving towards object
-%         if( and( dot(xd_w, x) > 0, ... % obstacle moving towards robo
-%                 norm(xd_w) > norm(xd) ) )% not moving faster than object -- moving into it 
-%              xd = xd - xd_w;
-%         else 
-%             xd_w = zeros(2,1);
-%         end
-        xd = xd - xd_w;
-else
-    xd_w = 0;
->>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
 end
 
 % Transformation of space (Ellipse to unit circle)
@@ -273,20 +250,6 @@ end
 
 function [xd] = spaceTrafo_ellipseCircle(obs, x, xd, w_obs)
 
-<<<<<<< HEAD
-% Recenter
-=======
-% Recenter 
-%<<<<<<< HEAD
-% x = x- obs.x0;
-% 
-% % Rotate 
-% R = [cos(th_r),-sin(th_r);
-%      sin(th_r),cos(th_r)];
-%  
-% % Stretch  
-% =======
->>>>>>> 6df7feded7746e2adcf35a7d1681b7649a51468b
 x = x - obs.x0;
 
 % Rotation Matrix
@@ -320,7 +283,6 @@ else
 end
 
 % Transformation of space (Ellipse to unit circle)
-%>>>>>>> 8e49294e1a0778f6697a16446a6834dcfc80b31a
 A = obs.sf(1)*diag([obs.a(1),obs.a(2)]);
 trafoMat = pinv(A)*R';
 

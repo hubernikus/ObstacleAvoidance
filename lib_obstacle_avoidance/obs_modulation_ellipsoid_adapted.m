@@ -78,11 +78,18 @@ N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
 
+
 xd_init = xd;
 
 xd_dx_obs = zeros(d,N);
 xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
 
+% Weird behavior of varargin when creating function handle, this can be
+% removed by adding this line. 
+switch(class(varargin{1}))
+     case 'cell'
+         varargin = varargin{1};
+end  
 
 for i=1:length(varargin)
     if ~isempty(varargin)
