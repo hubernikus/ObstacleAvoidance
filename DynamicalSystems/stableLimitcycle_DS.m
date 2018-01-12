@@ -1,4 +1,4 @@
-function xd = stableLimitcycle_DS(x)
+function xd= ellipseLimit_cycle(x)
 % stableLimitcycle_DS of a form of an ellipse
 
 x0 = [1;1]; % Center of ellipse
@@ -11,13 +11,13 @@ cosPhi = cos(phi); sinPhi = sin(phi);
 R = [cosPhi, -sinPhi;
      sinPhi, cosPhi]; 
  
-x = pinv(A)*R'*x; 
+%x = pinv(A)*R'*x; 
 
-xd =     -x(2,:) + x(1,:) .* (1 - (x(1,:).^2 + x(2,:).^2));
+xd      = -x(2,:) + x(1,:) .* (1 - (x(1,:).^2 + x(2,:).^2));
 xd(2,:) = x(1,:) + x(2,:) .* (1 - (x(1,:).^2 + x(2,:).^2));
 %xd(3,:) = -x(3,:)*0.3;
 
-xd = R*A*xd;
+%xd = R*A*xd;
 
 
 end

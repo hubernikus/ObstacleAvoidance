@@ -4,8 +4,6 @@ function DS_comparison_algorithms
 %%%          CH-1015 Lausanne, Switzerland, http://lasa.epfl.ch 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-
-
 clc; close all; clear variables;
 rng(1) % Set seeed for repeatability of simulation
 
@@ -31,6 +29,15 @@ opt_sim.tol = 0.05; %convergence tolerance
 opt_sim.plot = true; %enabling the animation
 opt_sim.model = 1; %first order ordinary differential equation
 opt_sim.obstacle = []; %no obstacle is defined
+
+funcHandle = {};
+funcHandle{1} = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
+funcHandle{2} = @(x,xd,obs,b_contour,varargin) obs_modulation_fluidMechanics(x,xd,obs,b_contour, varargin);
+funcHandle{3} = @(x,xd,obs,b_contour,varargin) obs_modulation_rotation(x,xd,obs,b_contour, varargin);
+funcHandle{4} = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
+avoidanceType = {'ellipsoid','fluid','rotation','none'};
+
+
 
 %% Mehsgrids
 close all; % clear variables
@@ -90,6 +97,8 @@ relativeChangeSqr_rot = sum(sum(sum((xd_rot - xd_hat).^2)))/N_tot;
 [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs1,50);
 
 figure('Position',[0 0 1000 1000]);
+set(groot,'DefaultAxesFontSize',14)
+set(groot,'DefaultLineLineWidth',1.0)
 patch(x_obs(1,:),x_obs(2,:),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]); hold on;
 plot(x_obs_sf(1,:),x_obs_sf(2,:),'k--','linewidth',0.5);
 
@@ -103,7 +112,7 @@ xlim([X(1,1),X(end,end)]);ylim([Y(1,1),Y(end,end)])
 %legend('','','Original System', 'Ellipse Modulation', 'Ellipse Modulation Adaptded')
 %drawArrow([-4,-4],[-5,-8],'linewidth',3,'color','r')
 axis equal;
-legend('','','Original', 'Ellipsoid', 'Fluid', 'Rotation')
+legend('Object','Safety Margin','Original DS', 'DMM', 'IFD', 'LRS')
 %print('fig/quiverPlot_DS_LS_circle_fluidMechanics','-depsc')
 
 
@@ -121,6 +130,15 @@ end
 
 %%  Rotating objects
 fprintf('Start 2D-Simulation \n');
+
+% Set default simulation parameters
+opt_sim.dt = 0.03; %integration time steps
+opt_sim.i_max = 120; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
+opt_sim.plot = true; %enabling the animation
+opt_sim.model = 1; %first order ordinary differential equation
+opt_sim.obstacle = []; %no obstacle is defined
+
 
 fn_handle = @(x) linearStableDS(x);
 
@@ -155,13 +173,6 @@ obs{i}.perturbation.w = -2;
 
 opt_sim.obstacle = obs;
 
-funcHandle = {};
-funcHandle{1} = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
-funcHandle{2} = @(x,xd,obs,b_contour,varargin) obs_modulation_fluidMechanics(x,xd,obs,b_contour, varargin);
-funcHandle{3} = @(x,xd,obs,b_contour,varargin) obs_modulation_rotation(x,xd,obs,b_contour, varargin);
-funcHandle{4} = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
-avoidanceType = {'ellipsoid','fluid','rotation','none'};
-
 nbSPoints = size(x0,2);
 
 simulationName = 'twoMovingRotatingObs';
@@ -173,6 +184,7 @@ for ii = 1:3
     opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
     fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
     opt_sim.figure = fig(ii);
+    
     [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
     
     fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
@@ -195,42 +207,17 @@ fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \
 
 fclose(fileID);
 
-%%
-opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_fluidMechanics(x,xd,obs,b_contour, varargin);
-%opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
-% needs to be adapted % opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid_adapted(x,xd,obs,b_contour,varargin);
-%opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_rotation(x,xd,obs,b_contour, varargin);
-
-
-opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_fluidMechanics(x,xd,obs,b_contour, varargin);
-fig(1) = figure('name','2movingRotatingObs_fluid','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); 
-
-opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
-fig(1) = figure('name','twoMovingRotatingObs_ellips','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); % 
-
-opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_rotation(x,xd,obs,b_contour, varargin);
-fig(1) = figure('name','twoMovingRotatingObs_localRot','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); 
-
-opt_simInit = opt_sim;
-opt_simInit.obstacle = [];
-
-%% opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_rotation(x,xd,obs,b_contour, varargin);
-fig(1) = figure('name','twoMovingRotatingObs_init','position',[200 100 700 700]);
-opt_simInit.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_simInit); 
-
-%xlim([-15 15]); ylim([-15 15])
-
-fprintf('End 2D-Simulation \n');
-
 %%  Rotating objects
 fprintf('Start 2D-Simulation \n');
+
+% Set default simulation parameters
+opt_sim.dt = 0.025; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
+opt_sim.plot = true; %enabling the animation
+opt_sim.model = 1; %first order ordinary differential equation
+opt_sim.obstacle = []; %no obstacle is defined
+
 
 fn_handle = @(x) linearStableDS(x);
 
@@ -246,13 +233,13 @@ i=1;
 
 obs{i}.a = [1;5];
 obs{i}.p = [1;1];
-obs{i}.x0 = [10;-4];
+obs{i}.x0 = [5;-4];
 obs{i}.sf = [1.2];
 obs{i}.th_r = 0*pi/180;
 obs{i}.perturbation.t0 = 0;
 obs{i}.perturbation.tf = 8;
-obs{i}.perturbation.dx = [-1;2];  
-obs{i}.perturbation.w = 1;  
+obs{i}.perturbation.dx = [-1;4];  
+obs{i}.perturbation.w = -1;  
 
 % Start simulation
 i=2; % object 2
@@ -268,14 +255,39 @@ obs{i}.perturbation.w = 3;
 
 opt_sim.obstacle = obs;
 
-opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_ellipsoid(x,xd,obs,b_contour, varargin);
-%opt_sim.obstacleAvoidanceFunction = @(x,xd,obs,b_contour,varargin) obs_modulation_fluidMechanics(x,xd,obs,b_contour, varargin);
-fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+nbSPoints = size(x0,2);
 
-%xlim([-15 15]); ylim([-15 15])
+simulationName = 'oneMovingRotatingObs';
 
+fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+fprintf(fileID,'Object Avoidance Type & Relative Change [m2/s2] & Number of Trajectories with Penetration [%%] & Penetration Steps [] & Convergence Time [s] & Convergence Distance [m] & Normalized Energy [J/kg] & Computational Time [ms] \\\\ \\hline \n');
+
+for ii = 1:3
+    opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
+    fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
+    opt_sim.figure = fig(ii);
+    
+    [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
+    
+    fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+end
+%fclose(fileID);
+%
+%fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+ii = 4;
+opt_sim.obstacleAvoidanceFunction = funcHandle{4};
+opt_simInit = opt_sim;
+opt_simInit.obstacle = [];
+fig(ii) = figure('name',strcat(simulationName,'_none'),'position',[200 100 700 700]);
+opt_simInit.figure = fig(ii);
+[~,~,~,~,~,metrics] = Simulation(x0,[],fn_handle,opt_simInit); 
+fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+
+fclose(fileID);
 
 
 %%  Constant vel to origin 
@@ -290,34 +302,63 @@ x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
 % Place obstacles
 obs = [];
 
-opt_sim.dt = 0.03; %integration time steps
-opt_sim.i_max = 500; %maximum number of iterations
-opt_sim.tol = 0.05; %convergence tolerance
+opt_sim.dt = 0.025; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
+opt_sim.tol = 0.00001; %convergence tolerance
 
 % obstacle 1
 i=1;
 
-obs{i}.a = [3;3];
+obs{i}.a = [2;4];
 obs{i}.p = [1;1];
-obs{i}.x0 = [10;5];
+obs{i}.x0 = [10;4];
 obs{i}.sf = [1.2];
-obs{i}.th_r = 0*pi/180;
-obs{i}.perturbation.t0 = 4;
-obs{i}.perturbation.tf = 12;
-obs{i}.perturbation.dx = [-4;0];  
+obs{i}.th_r = 60*pi/180;
+% obs{i}.perturbation.t0 = 4;
+% obs{i}.perturbation.tf = 10;
+% obs{i}.perturbation.dx = [-4;0];  
 %obs{i}.perturbation.w = 1;  
 
 opt_sim.obstacle = obs;
 
-fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+nbSPoints = size(x0,2);
 
+simulationName = 'staticEllipse';
+
+fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+fprintf(fileID,'Object Avoidance Type & Relative Change [m2/s2] & Number of Trajectories with Penetration [%%] & Penetration Steps [] & Convergence Time [s] & Convergence Distance [m] & Normalized Energy [J/kg] & Computational Time [ms] \\\\ \\hline \n');
+
+for ii = 1:3
+    opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
+    fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
+    opt_sim.figure = fig(ii);
+    
+    [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
+    
+    fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+end
+%fclose(fileID);
+%
+%fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+ii = 4;
+opt_sim.obstacleAvoidanceFunction = funcHandle{4};
+opt_simInit = opt_sim;
+opt_simInit.obstacle = [];
+fig(ii) = figure('name',strcat(simulationName,'_none'),'position',[200 100 700 700]);
+opt_simInit.figure = fig(ii);
+[~,~,~,~,~,metrics] = Simulation(x0,[],fn_handle,opt_simInit); 
+fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+
+fclose(fileID);
 
 fprintf('End 2D-Simulation \n');
 
 
-%%  Rotating object close to origin 
+%%  Constant vel to origin 
 fprintf('Start 2D-Simulation \n');
 
 fn_handle = @(x) linearStableDS(x);
@@ -326,8 +367,75 @@ N = 20;
 x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
 %x0 = x0(:,5);
 
-opt_sim.dt = 0.01; %integration time steps
-opt_sim.i_max = 500; %maximum number of iterations
+% Place obstacles
+obs = [];
+
+opt_sim.dt = 0.025; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
+opt_sim.tol = 0.00001; %convergence tolerance
+
+% obstacle 1
+i=1;
+
+obs{i}.a = [3;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [10;4];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
+obs{i}.perturbation.t0 = 4;
+obs{i}.perturbation.tf = 10;
+obs{i}.perturbation.dx = [-4;0];  
+%obs{i}.perturbation.w = 1;  
+
+opt_sim.obstacle = obs;
+
+nbSPoints = size(x0,2);
+
+simulationName = 'leftMoving_circle';
+
+fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+fprintf(fileID,'Object Avoidance Type & Relative Change [m2/s2] & Number of Trajectories with Penetration [%%] & Penetration Steps [] & Convergence Time [s] & Convergence Distance [m] & Normalized Energy [J/kg] & Computational Time [ms] \\\\ \\hline \n');
+
+for ii = 1:3
+    opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
+    fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
+    opt_sim.figure = fig(ii);
+    
+    [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
+    
+    fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+end
+%fclose(fileID);
+%
+%fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+ii = 4;
+opt_sim.obstacleAvoidanceFunction = funcHandle{4};
+opt_simInit = opt_sim;
+opt_simInit.obstacle = [];
+fig(ii) = figure('name',strcat(simulationName,'_none'),'position',[200 100 700 700]);
+opt_simInit.figure = fig(ii);
+[~,~,~,~,~,metrics] = Simulation(x0,[],fn_handle,opt_simInit); 
+fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+
+fclose(fileID);
+
+fprintf('End 2D-Simulation \n');
+
+%%  Rotating object close to origin 
+fprintf('Start 2D-Simulation \n');
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 15;
+x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+opt_sim.dt = 0.025; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
 opt_sim.tol = 0.05; %convergence tolerance
 
 
@@ -343,30 +451,127 @@ obs{i}.x0 = [6;3];
 obs{i}.sf = [1.2];
 obs{i}.th_r = 0*pi/180;
 obs{i}.perturbation.t0 = 0;
-obs{i}.perturbation.tf = 12;
+obs{i}.perturbation.tf = 10;
 obs{i}.perturbation.dx = [0;0];  
 obs{i}.perturbation.w = 1;  
 
 
 opt_sim.obstacle = obs;
 
+simulationName = 'rotating_circle';
 
-fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+fprintf(fileID,'Object Avoidance Type & Relative Change [m2/s2] & Number of Trajectories with Penetration [%%] & Penetration Steps [] & Convergence Time [s] & Convergence Distance [m] & Normalized Energy [J/kg] & Computational Time [ms] \\\\ \\hline \n');
 
-%xlim([-15 15]); ylim([-15 15])
+for ii = 1:3
+    opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
+    fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
+    opt_sim.figure = fig(ii);
+    
+    [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
+    
+    fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+end
+%fclose(fileID);
+%
+%fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+ii = 4;
+opt_sim.obstacleAvoidanceFunction = funcHandle{4};
+opt_simInit = opt_sim;
+opt_simInit.obstacle = [];
+fig(ii) = figure('name',strcat(simulationName,'_none'),'position',[200 100 700 700]);
+opt_simInit.figure = fig(ii);
+[~,~,~,~,~,metrics] = Simulation(x0,[],fn_handle,opt_simInit); 
+fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+
+fclose(fileID);
 
 fprintf('End 2D-Simulation \n');
 
-
-%%  2 convex to concave
+%%  Rotating object close to origin 
 fprintf('Start 2D-Simulation \n');
+
+opt_sim.dt = 0.01; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
 
 fn_handle = @(x) linearStableDS(x);
 
-N = 20;
+N = 15;
 x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+%x0 = x0(:,5);
+
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+
+obs{i}.a = [1;5];
+obs{i}.p = [1;1];
+obs{i}.x0 = [10;-10];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 30*pi/180;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 3;
+obs{i}.perturbation.dx = [0;10];  
+
+opt_sim.obstacle = obs;
+
+simulationName = 'fastMovingEllipse';
+
+fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+fprintf(fileID,'Object Avoidance Type & Relative Change [m2/s2] & Number of Trajectories with Penetration [%%] & Penetration Steps [] & Convergence Time [s] & Convergence Distance [m] & Normalized Energy [J/kg] & Computational Time [ms] \\\\ \\hline \n');
+
+for ii = 1:3
+    opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
+    fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
+    opt_sim.figure = fig(ii);
+    
+    [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
+    
+    fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+end
+%fclose(fileID);
+%
+%fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+ii = 4;
+opt_sim.obstacleAvoidanceFunction = funcHandle{4};
+opt_simInit = opt_sim;
+opt_simInit.obstacle = [];
+fig(ii) = figure('name',strcat(simulationName,'_none'),'position',[200 100 700 700]);
+opt_simInit.figure = fig(ii);
+[~,~,~,~,~,metrics] = Simulation(x0,[],fn_handle,opt_simInit); 
+fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+
+fclose(fileID);
+
+fprintf('End 2D-Simulation \n');
+
+%%  4 obstacles
+fprintf('Start 2D-Simulation \n');
+
+
+opt_sim.dt = 0.01; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
+
+
+fn_handle = @(x) linearStableDS(x);
+
+N = 30;
+R = 10;
+phi = (1:N)/N*2*pi
+x0 = [cos(phi)*R ; sin(phi)*R];
 %x0 = x0(:,5);
 
 % Place obstacles
@@ -374,66 +579,134 @@ obs = [];
 
 % obstacle 1
 i=1;
-obs{i}.a = [1;4];
+obs{i}.a = [1;3];
 obs{i}.p = [1;1];
 obs{i}.x0 = [5;-2];
 obs{i}.sf = [1.2];
 obs{i}.th_r = -60*pi/180;
 i=2;
-obs{i}.a = [1;5];
+obs{i}.a = [2;2.5];
 obs{i}.p = [1;1];
-obs{i}.x0 = [4;3];
+obs{i}.x0 = [3;2];
 obs{i}.sf = [1.2];
 obs{i}.th_r = 45*pi/180;
-
+i=3;
+obs{i}.a = [4;1];
+obs{i}.p = [1;1];
+obs{i}.x0 = [-3;-2];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 90*pi/180;
+i=4;
+obs{i}.a = [2;1];
+obs{i}.p = [1;1];
+obs{i}.x0 = [1;-7];
+obs{i}.sf = [1.2];
+obs{i}.th_r = 0*pi/180;
 
 opt_sim.obstacle = obs;
 
 
-fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+simulationName = 'fourStaticObjects';
 
-%xlim([-15 15]); ylim([-15 15])
+fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+fprintf(fileID,'Object Avoidance Type & Relative Change [m2/s2] & Number of Trajectories with Penetration [%%] & Penetration Steps [] & Convergence Time [s] & Convergence Distance [m] & Normalized Energy [J/kg] & Computational Time [ms] \\\\ \\hline \n');
+
+for ii = 1:3
+    opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
+    fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
+    opt_sim.figure = fig(ii);
+    
+    [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
+    
+    fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+end
+%fclose(fileID);
+%
+%fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+ii = 4;
+opt_sim.obstacleAvoidanceFunction = funcHandle{4};
+opt_simInit = opt_sim;
+opt_simInit.obstacle = [];
+fig(ii) = figure('name',strcat(simulationName,'_none'),'position',[200 100 700 700]);
+opt_simInit.figure = fig(ii);
+[~,~,~,~,~,metrics] = Simulation(x0,[],fn_handle,opt_simInit); 
+fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+
+fclose(fileID);
 
 fprintf('End 2D-Simulation \n');
+
 
 
 %%  2 convex to concave
 fprintf('Start 2D-Simulation \n');
 
-fn_handle = @(x) linearStableDS(x);
+opt_sim.dt = 0.01; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
 
-N = 20;
-x0 = [ones(1,N)*20 ; linspace(-10,20,N)];
+fn_handle = @(x) ellipseLimit_cycle(x);
+
+N = 10;
+R = 2;
+phi = (1:N)/N*2*pi
+x0 = [cos(phi)*R ; sin(phi)*R].*rand(2,N)*2;
+
 %x0 = x0(:,5);
 
 % Place obstacles
 obs = [];
 
-% obstacle 1
+% % obstacle 1
 i=1;
-obs{i}.a = [1;4];
+obs{i}.a = [0.8;0.6];
 obs{i}.p = [1;1];
-obs{i}.x0 = [8;-2];
+obs{i}.x0 = [2;0];
 obs{i}.sf = [1.2];
 obs{i}.th_r = 60*pi/180;
 i=2;
-obs{i}.a = [1;5];
+obs{i}.a = [0.5;1];
 obs{i}.p = [1;1];
-obs{i}.x0 = [7;3];
+obs{i}.x0 = [2;3];
 obs{i}.sf = [1.2];
 obs{i}.th_r = -45*pi/180;
 
 
-opt_sim.obstacle = obs;
+simulationName = 'limitCycle';
 
+fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+fprintf(fileID,'Object Avoidance Type & Relative Change [m2/s2] & Number of Trajectories with Penetration [%%] & Penetration Steps [] & Convergence Time [s] & Convergence Distance [m] & Normalized Energy [J/kg] & Computational Time [ms] \\\\ \\hline \n');
 
-fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
-opt_sim.figure = fig(1);
-Simulation(x0,[],fn_handle,opt_sim); % NOT good IC
+for ii = 1:3
+    opt_sim.obstacleAvoidanceFunction = funcHandle{ii};
+    fig(ii) = figure('name',strcat(simulationName,'_',avoidanceType{ii}),'position',[200 100 700 700]);
+    opt_sim.figure = fig(ii);
+    
+    [~,~,time,~,~,metrics] = Simulation(x0,[],fn_handle,opt_sim); 
+    
+    fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
+end
+%fclose(fileID);
+%
+%fileID = fopen(strcat('simulationResults/table_',simulationName,'.txt'),'w');
+ii = 4;
+opt_sim.obstacleAvoidanceFunction = funcHandle{4};
+opt_simInit = opt_sim;
+opt_simInit.obstacle = [];
+fig(ii) = figure('name',strcat(simulationName,'_none'),'position',[200 100 700 700]);
+opt_simInit.figure = fig(ii);
+[~,~,~,~,~,metrics] = Simulation(x0,[],fn_handle,opt_simInit); 
+fprintf(fileID,'%s & %3.4f & %2.1f %%  & %3.4f & %3.4f & %3.4f & %3.4f & %3.4f \\\\ \\hline \n', ....
+            avoidanceType{ii}, sum(metrics.relativeChangeSqr), metrics.badTrajectoriesNum/nbSPoints*100, metrics.penetrationNum, ...
+            sum(metrics.convergeTime,1)/nbSPoints, sum(metrics.convergeDist,1)/nbSPoints, sum(metrics.convergeEnergy,1)/nbSPoints, 1000*sum(metrics.compTime)/nbSPoints);
 
-%xlim([-15 15]); ylim([-15 15])
+fclose(fileID);
 
 fprintf('End 2D-Simulation \n');
 
@@ -550,24 +823,4 @@ fprintf('End 2D-Simulation \n');
 
 
 fprintf('End 2D-Simulation \n');
-%%
-close all
 
-% obstacle 1
-obs{1}.a = [1;4];
-obs{1}.p = [1;1];
-obs{1}.x0 = [0;0];
-obs{1}.sf = [1.2;1.2];
-obs{1}.th_r = 0*pi/180;
-obs{1}.concaveAngle = pi*0.2;
-
-[x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,101);
-    
-
-figure('Position',[0 0 1000 1000]);
-% Draw object
-patch(x_obs(1,:),x_obs(2,:),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]); hold on;
-plot(x_obs_sf(1,:),x_obs_sf(2,:),'k-x','linewidth',0.5);
-%print('fig/quiverPlot_DS_LS_circle_fluidMechanics','-depsc')
-axis equal;
-plot(obs{1}.x0(1),obs{1}.x0(2), 'ro')

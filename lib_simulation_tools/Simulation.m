@@ -96,12 +96,17 @@ function [x, xd, t, xT, x_obs, metrics] = Simulation(x0,xT,fn_handle, varargin)
 %% Set up metrics
 nbSPoints=size(x0,2); %number of starting points. This enables to simulatneously run several trajectories
 
+
+movieSave = false;
 figSave = false;
+
 dataAnalysis = true;
 simulationName = get(gcf,'Name');
 
+N_pigSave = 5; % Number of pictures being saved
+picNum = 0; % number of picuture already saved
     
-if figSave
+if movieSave
     % Figure Name
     filename = sprintf(strcat('animations/',simulationName,'.gif'));
     
@@ -330,8 +335,6 @@ while true
     end
     axis equal;
 
-    
-
     %%%%%%%%%%%%%%%%% Check for collision %%%%%%%%%%%%%%%%%%%%%%%
     for ii = 1:size(x,3)
         if obs_check_collision(obs,x(:,end,ii)) %Observe collision
@@ -344,7 +347,7 @@ while true
     end
     
     %%%%%%%%%%%%%%%% Create Animation %%%%%%%%%%%%%%%%%%%%%%%
-    if(figSave) % write to file
+    if(movieSave) % write to file
 %         frame = getframe(sp.fig); 
 %         im = frame2im(frame); 
 %         [imind,cm] = rgb2ind(im,256); 
@@ -381,7 +384,13 @@ while true
             end
         end
     end
-
+    
+    % Save simulation pictures
+    if and(figSave, (options.i_max-2)/N_pigSave*picNum < iSim)
+        print(strcat('fig/',simulationName,'_fig',num2str(picNum)),'-depsc')
+        picNum = picNum +1;
+    end
+    
     %Checking the convergence
     if all(all(all(abs(xd_3last)<options.tol))) || iSim>options.i_max-2
         if options.plot
@@ -389,7 +398,7 @@ while true
         end
         iSim=iSim+1;
 
-%         xd(:,i,:)=reshape(fn_handle(squeeze(x(:,i,:))-XT),[d 1 nbSPoint]);
+        % xd(:,i,:)=reshape(fn_handle(squeeze(x(:,i,:))-XT),[d 1 nbSPoint]);
         x(:,end,:) = [];
         t(end) = [];
         fprintf('Number of Iterations: %1.0f\n',iSim)
@@ -407,6 +416,11 @@ while true
             fprintf('Simulation stopped since it reaches the maximum number of allowed iterations i_max = %1.0f\n',iSim)
             fprintf('Exiting without convergence!!! Increase the parameter ''options.i_max'' to handle this error.\n')
         end
+        
+        if figSave % Save the last picture
+            print(strcat('fig/',simulationName,'_fig',num2str(picNum)),'-depsc')
+        end
+        
         break
     end
        
@@ -414,7 +428,7 @@ while true
 end
 
 %%%%%%%% End simulation loop %%%%%%%%
-if(figSave); close(vidObj); end % Close video obj
+if(movieSave); close(vidObj); end % Close video obj
 
 for ii = 1:nbSPoints % if not converged
     if metrics.convergeTime(ii) == 0
