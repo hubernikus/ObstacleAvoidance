@@ -110,7 +110,7 @@ for n=1:N
     % rotating the query point into the obstacle frame of reference
     if isfield(obs{n},'th_r')
         if size(obs{n}.th_r(:),1) == d && size(obs{n}.th_r(:),2) == d
-            R = obs{n}.th_r;
+            R = obs{n}.th_r;ob
         else
             R = compute_R(d,obs{n}.th_r);
         end

@@ -98,7 +98,9 @@ nbSPoints=size(x0,2); %number of starting points. This enables to simulatneously
 
 
 movieSave = false;
-figSave = false;
+figSave = true;
+
+maxVal = false;
 
 dataAnalysis = true;
 simulationName = get(gcf,'Name');
@@ -207,8 +209,6 @@ else
     XT = repmat(xT,1,nbSPoints); %a matrix of target location (just to simplify computation)
 end
 
-xd_obs  = zeros(2,length(obs)); % Linear veloctiy
-w_obs = zeros(1,length(obs));   % Angular rate
             
 t=0; %starting time
 
@@ -373,7 +373,7 @@ while true
         for ii = 1:size(x,3)
             if metrics.convergeTime(ii) == 0 % not converged yet
                 lastDistSqrd =  sum((x(:,end,ii)-x(:,end-1,ii)).^2);
-                metrics.convergeDist(ii) = metrics.convergeDist(ii) + lastDistSqrd;  % Discrete integration of the distance
+                metrics.convergeDist(ii) = metrics.convergeDist(ii) + sqrt(lastDistSqrd);  % Discrete integration of the distance
                 metrics.convergeEnergy = metrics.convergeEnergy +  sqrt(sum((xd(:,end,ii)-xd(:,end-1,ii)).^2)*lastDistSqrd); % Discrete integration of energy
 
                 if and(iSim>3, all(all(abs(xd_3last(:,:,ii))))<options.tol) % is converged now
@@ -384,7 +384,13 @@ while true
             end
         end
     end
-    
+
+    if(maxVal) % limit to maximum value, in case of locally stable system
+        xlim([-5,6])
+        ylim([-5,6])
+        value_max = 1000;
+        x(:,iSim,:) = min(value_max, x(:,iSim,:));
+    end
     % Save simulation pictures
     if and(figSave, (options.i_max-2)/N_pigSave*picNum < iSim)
         print(strcat('fig/',simulationName,'_fig',num2str(picNum)),'-depsc')
@@ -423,6 +429,8 @@ while true
         
         break
     end
+    
+
        
     iSim=iSim+1; % increment time
 end
