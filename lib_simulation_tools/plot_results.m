@@ -25,15 +25,27 @@ switch mode
             end
             xlabel('$\xi_1$','interpreter','latex','fontsize',16);
             ylabel('$\xi_2$','interpreter','latex','fontsize',16);
-            grid on;box on
-            
+            grid on; box on;
+
             if b_obs
                 [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,40);
                 for n=1:size(x_obs,3)
-                    sp.obs(n) = patch(x_obs(1,:,n),x_obs(2,:,n),0.1*ones(1,size(x_obs,2)),[0.6 1 0.6]);
+                    sp.obs(n) = patch(x_obs(1,:,n),x_obs(2,:,n),0.0*ones(1,size(x_obs,2)),[0.6 1 0.6]);
                     sp.obs_sf(n) = plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
+                    
+                    if ~isfield(obs{n}, 'x_center')
+                        obs{n}.x_center = [0;0];
+                    end
+                    cosAng = cos(obs{n}.th_r);
+                    sinAng = sin(obs{n}.th_r);
+                    R = [cosAng, -sinAng; sinAng, cosAng];
+                    pos = obs{n}.x0 + R*(obs{n}.a.*obs{n}.x_center);
+                    plot(pos(1),pos(2),'k+','LineWidth',2)
                 end
             end
+            
+            
+            
         elseif d==3
             if isfield(sp,'fig')
                 figure(sp.fig)

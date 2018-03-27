@@ -17,8 +17,8 @@ if isempty(regexp(path,['lib_obstacle_avoidance' pathsep], 'once'))
     addpath([pwd, '/lib_obstacle_avoidance']);
 end
 %adding the example folder to the MATLAB path directories
-if isempty(regexp(path,['Example_DSs' pathsep], 'once'))
-    addpath([pwd, '/Example_DSs']);
+if isempty(regexp(path,['DynamicalSystems' pathsep], 'once'))
+    addpath([pwd, '/DynamicalSystems']);
 end
 
 % Set default simulation parameters

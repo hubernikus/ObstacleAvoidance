@@ -1,6 +1,8 @@
-function xd = linearStableDS(x)
+function xd = linearStableDS(x,x0)
 % A = - I ; 
-x0 = [0;0];
+if nargin<2
+    x0 = [0;0];
+end
 
 xd = - (x-x0);
 

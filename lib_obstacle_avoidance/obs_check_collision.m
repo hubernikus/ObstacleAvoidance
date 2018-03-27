@@ -1,14 +1,17 @@
-function [collision] = obs_check_collision(obs_list, X, Y)
-% For the moment only implemented in 2D
+function [collision, X_noColl, Y_noColl] = obs_check_collision(obs_list, X, Y)
+% At the moment only implemented for 2D
 if nargin == 3
-   collision = zeros(size(X));
+    collision = zeros(size(X));
 else
     collision = [0]; % ONLY for 2 objects
-    X = X(1);
     Y = X(2);
+    X = X(1);
 end
+X_noColl = X;
+Y_noColl = Y;
 
-if length(obs_list) == 0; return; end;
+
+if isempty(obs_list); return; end
 
 [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs_list,50);
 
@@ -28,7 +31,7 @@ for it_x = 1:size(X,1)
             [~, i1] = min(allDistances);
 
             % Indexes for the closest triangle
-           i0 = mod(N_obs+i1-2,N_obs)+1;
+            i0 = mod(N_obs+i1-2,N_obs)+1;
             i2 = mod(N_obs+i1,N_obs)+1;
 
             % Find direction of convexity
@@ -61,12 +64,13 @@ for it_x = 1:size(X,1)
                 testVec = x0 -x_obs_sf(:,i1,it_obs);
                 if(testVec'*perpDir2 > 0) % is in the convex region
                     collision(it_y,it_x)  = true;
+                    X_noColl(it_y,it_x) = x_obs_sf(1,i1,it_obs);
+                    Y_noColl(it_y,it_x) = x_obs_sf(2,i1,it_obs);
                     break;
                 end
             end
 
             if false
-
                 figure(10);
                 plot([x_obs_sf(1,i0,obs),x_obs_sf(1,i1,obs)], ...
                      [x_obs_sf(2,i0,obs),x_obs_sf(2,i1,obs)], ...    
@@ -75,12 +79,8 @@ for it_x = 1:size(X,1)
                      [x_obs_sf(2,i1,obs),x_obs_sf(2,i2,obs)], ...    
                       'r--')
                 plot(x0(1), x0(2), 'kx', 'Linewidth', 10);
-                %plot(x_obs_sf(1,i1,obs),x_obs_sf(2,i1,obs),'xr')
-                %plot(x_obs_sf(1,i2,obs),x_obs_sf(2,i2,obs),'xr')
 
                 plot([x_obs_sf(1,i0,obs)],[x_obs_sf(2,i0,obs)],'gx'); hold on;
-                %plot([x_obs_sf(1,i1,obs),x_obs_sf(1,i0,obs)],[x_obs_sf(2,i1,obs),x_obs_sf(2,i0,obs)],'b')
-                %plot([x_obs_sf(1,i2,obs),x_obs_sf(1,i1,obs)],[x_obs_sf(2,i2,obs),x_obs_sf(2,i1,obs)],'b')
                 plot([x_obs_sf(1,i0,obs)+vec1(1),x_obs_sf(1,i0,obs)],...
                      [x_obs_sf(2,i0,obs)+vec1(2),x_obs_sf(2,i0,obs)],'k--')
                 plot([x_obs_sf(1,i0,obs)+perpDir1(1),x_obs_sf(1,i0,obs)],...
@@ -92,7 +92,7 @@ for it_x = 1:size(X,1)
                 pause()
                 close(10);
             end
-            
+           
         end
     end
 end
