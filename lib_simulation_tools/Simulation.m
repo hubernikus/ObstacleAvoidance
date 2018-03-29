@@ -86,6 +86,7 @@ function [x, xd, t, xT, x_obs] = Simulation(x0,xT,fn_handle,varargin)
 % Please send your feedbacks or questions to:
 %                           mohammad.khansari_at_epfl.ch
 
+
 %% parsing inputs
 if isempty(varargin)
     options = check_options();
@@ -131,6 +132,10 @@ if isfield(options,'obstacle') && ~isempty(options.obstacle) %there is obstacle
     obs = options.obstacle;
     for n=1:length(obs)
         x_obs{n} = obs{n}.x0;
+        if ~isfield(obs{n},'x_center')
+            obs{n}.x_center = zeros(d,1);
+        end
+        
         if ~isfield(obs{n},'extra')
             obs{n}.extra.ind = 2;
             obs{n}.extra.C_Amp = 0.01;
@@ -202,8 +207,24 @@ while true
     % This part if for the obstacle avoidance module
     if obs_bool
         xd_obs = zeros(d,nbSPoint);
+        
+        % Check wheter there is an overlapping of obstacles
+        [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(obs);
+        
         % applying perturbation on the obstacles
         for n=1:length(obs)
+            
+            
+            if sum(ismember(intersection_obs,n))
+                % Intersection with another obstacle
+                obs{n}.x_center_dyn = x_center_dyn;
+            else
+                if isfield(obs{n},'x_center_dyn')
+                    obs{n} = rmfield(obs{n},'x_center_dyn');
+                end
+            end
+            plot_results('c',sp,x,xT,n, obs);
+            
             % Initialize Obstacles
             w_obs(n) = 0;
             xd_obs(:,n) = [0;0];
@@ -225,8 +246,11 @@ while true
                     x_obs{n}(:,end+1) = x_obs{n}(:,end);
                 end
             end
+            
+
         end
         
+
         for j=1:nbSPoint
             [xd(:,iSim,j), b_contour(j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
         end

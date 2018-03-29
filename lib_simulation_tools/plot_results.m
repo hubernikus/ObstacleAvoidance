@@ -33,19 +33,21 @@ switch mode
                     sp.obs(n) = patch(x_obs(1,:,n),x_obs(2,:,n),0.0*ones(1,size(x_obs,2)),[0.6 1 0.6]);
                     sp.obs_sf(n) = plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
                     
-                    if ~isfield(obs{n}, 'x_center')
-                        obs{n}.x_center = [0;0];
+                    if isfield(obs{n}, 'x_center_dyn')
+                        sp.x_center(n) = plot(obs{n}.x_center_dyn(1),obs{n}.x_center_dyn(2),'k+','LineWidth',2.3); hold on;
+                    else
+                        if ~isfield(obs{n}, 'x_center')
+                            obs{n}.x_center = [0;0];
+                        end
+                        cosAng = cos(obs{n}.th_r);
+                        sinAng = sin(obs{n}.th_r);
+                        R = [cosAng, -sinAng; sinAng, cosAng];
+                        pos = obs{n}.x0 + R*(obs{n}.a.*obs{n}.x_center);
+                        sp.x_center(n) = plot(pos(1),pos(2),'k+','LineWidth',2);
                     end
-                    cosAng = cos(obs{n}.th_r);
-                    sinAng = sin(obs{n}.th_r);
-                    R = [cosAng, -sinAng; sinAng, cosAng];
-                    pos = obs{n}.x0 + R*(obs{n}.a.*obs{n}.x_center);
-                    plot(pos(1),pos(2),'k+','LineWidth',2)
                 end
             end
-            
-            
-            
+
         elseif d==3
             if isfield(sp,'fig')
                 figure(sp.fig)
@@ -69,6 +71,7 @@ switch mode
                     sp.obs(n) = surf(reshape(x_obs(1,:,n),n_phi,n_theta), reshape(x_obs(2,:,n),n_phi,n_theta), reshape(x_obs(3,:,n),n_phi,n_theta));
                     set(sp.obs(n),'FaceColor',[0.6 1 0.6],'linewidth',0.1)
                 end
+
             end
             xlabel('$\xi_1$','interpreter','latex','fontsize',16);
             ylabel('$\xi_2$','interpreter','latex','fontsize',16);
@@ -219,6 +222,7 @@ switch mode
                     set(sp.obs_sf(n),'XData',get(sp.obs_sf(n),'XData')+ dx(1))
                     set(sp.obs_sf(n),'YData',get(sp.obs_sf(n),'YData')+ dx(2))
                 end
+
             elseif d==3
                 set(sp.obs(n),'XData',get(sp.obs(n),'XData')+ dx(1))
                 set(sp.obs(n),'YData',get(sp.obs(n),'YData')+ dx(2))
@@ -226,7 +230,29 @@ switch mode
             end
         end
         
-    case 'f' % final alighnment of axis
+    case 'c' % adapt center case
+        n = varargin{1};
+        obs = varargin{2};
+        if d == 2
+            if isfield(obs{n}, 'x_center_dyn')
+                set(sp.x_center(n), 'XData', obs{n}.x_center_dyn(1));
+                set(sp.x_center(n), 'YData', obs{n}.x_center_dyn(2));
+            else
+                if ~isfield(obs{n}, 'x_center')
+                    obs{n}.x_center = [0;0];
+                end
+                cosAng = cos(obs{n}.th_r);
+                sinAng = sin(obs{n}.th_r);
+                R = [cosAng, -sinAng; sinAng, cosAng];
+                pos = obs{n}.x0 + R*(obs{n}.a.*obs{n}.x_center);
+                set(sp.x_center(n), 'XData', pos(1))
+                set(sp.x_center(n), 'YData', pos(2))
+            end
+        elseif d==3
+            warning('3d case not yet implemented \n');
+        end
+        
+    case 'f' % final alignment of axis
         if gcf ~= sp.fig
             figure(sp.fig)
         end

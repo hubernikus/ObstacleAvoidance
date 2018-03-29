@@ -49,7 +49,6 @@ obs{i}.p = [1;1];
 obs{i}.x0 = [3;0.0];
 obs{i}.sf = [1.0];
 obs{i}.th_r = 0*pi/180;
-obs{i}.x_center = [0.0;0.0];
 
 % Start simulation
 opt_sim.obstacle = obs;
@@ -115,19 +114,20 @@ obs{i}.x0 = [10;-4];
 obs{i}.sf = [1.];
 obs{i}.th_r = 40*pi/180;
 obs{i}.x_center = [0.0;0.95];
+opt_sim.dt = 0.003; %integration time steps
 %obs{i}.x_center_dyn = [6.3518; 0.439];
 
 obs{i}.tailEffect = taileffect;
 
-% i=2;
-% obs{i}.a = [1.4;7];
-% obs{i}.p = [1;1];
-% obs{i}.x0 = [10;3.5];
-% obs{i}.sf = [1];
-% obs{i}.th_r = -60*pi/180;
-% obs{i}.x_center = [0.65;-.75];
-% %obs{i}.x_center_dyn = [6.3518; 0.439];
-% obs{i}.tailEffect = taileffect;
+i=2;
+obs{i}.a = [1.4;7];
+obs{i}.p = [1;1];
+obs{i}.x0 = [10;-3];
+obs{i}.sf = [1];
+obs{i}.th_r = -60*pi/180;
+obs{i}.x_center = [0.65;-.75];
+%obs{i}.x_center_dyn = [6.3518; 0.439];
+obs{i}.tailEffect = taileffect;
 
 
 % Start simulation
@@ -148,8 +148,8 @@ x_range = [-1,25]; y_range = [-13,11];
 
 opt_sim.simulationName = 'two_ellipse_intersection'
 
-%[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
-Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
+[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+%Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
 
 %% Concave Obstacles
 taileffect = true;
@@ -175,7 +175,7 @@ obs{i}.p = [1;1];
 obs{i}.x0 = [10;-4];
 obs{i}.sf = [1.];
 obs{i}.th_r = 40*pi/180;
-obs{i}.x_center = [0.0;0.9];
+%obs{i}.x_center = [0.0;0.9];
 obs{i}.tailEffect = taileffect;
 
 i=2;
@@ -184,7 +184,7 @@ obs{i}.p = [1;1];
 obs{i}.x0 = [10;3.5];
 obs{i}.sf = [1.];
 obs{i}.th_r = -60*pi/180;
-obs{i}.x_center = [.55;-0.7];
+%obs{i}.x_center = [.55;-0.7];
 obs{i}.tailEffect = taileffect;
 
 % Start simulation
@@ -196,7 +196,7 @@ opt_sim.figure = fig(1);
 
 %Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
 
-opt_sim.saveFig = true;
+opt_sim.saveFig = false;
 opt_sim.attractor = x_attractor;
 
 % Simulation Parameters
@@ -239,7 +239,7 @@ obs{i}.tailEffect = taileffect;
 i=2;
 obs{i}.a = [1.4;7];
 obs{i}.p = [1;1];
-obs{i}.x0 = [0;0];
+obs{i}.x0 = [-5;0];
 obs{i}.sf = [1.];
 obs{i}.th_r = -30*pi/180;
 obs{i}.x_center = [.55;0.7];
@@ -263,18 +263,16 @@ x_range = [-13,13]; y_range = [-12,13];
 
 opt_sim.simulationName = 'twoEllipse_perpendicular'
 
-
-%[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
-
+[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
 
 %% Concave Obstacles
-
 taileffect = true;
 
 close all; clc;
 fprintf('Start 2D-Simulation \n');
 
-ds_handle = @(x) linearStableDS(x);
+x_attractor = [20;0];
+ds_handle = @(x) linearStableDS(x, x_attractor);
 %fn_handle = @(x) parallelFlow_DS(x,-10);
 fn_handle_objAvoidance= @(x,xd,obs,b_contour,varargin) ...
                           obs_modulation_convergence(x,xd,obs,b_contour, varargin);
@@ -288,12 +286,11 @@ obs = [];
 i=1;
 obs{i}.a = [1.;10];
 obs{i}.p = [1;1];
-obs{i}.x0 = [12;.0];
+obs{i}.x0 = [12;4];
 obs{i}.sf = [1.1];
-obs{i}.th_r = 60*pi/180;
+obs{i}.th_r = 0*pi/180;
 obs{i}.x_center = [0.0;0];
 obs{i}.tailEffect = taileffect;
-
 
 i=2;
 obs{i}.a = [1.4;8];
@@ -309,22 +306,156 @@ obs{i}.a = [0.9;10];
 obs{i}.p = [1;1];
 obs{i}.x0 = [12;.0];
 obs{i}.sf = [1.1];
-obs{i}.th_r = 0*pi/180;
+obs{i}.th_r = 60*pi/180;
 obs{i}.x_center = [0.0;0];
 obs{i}.tailEffect = taileffect;
 
+% Start simulation
 opt_sim.obstacle = obs;
-opt_sim.attractor = [0;0];
+opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
 
-opt_sim.saveFig = true;
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+
+%Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
+
+opt_sim.saveFig = false;
+opt_sim.attractor = x_attractor;
 
 % Simulation Parameters
-N_x = 100;  N_y = N_x;
+N_x = 30;  N_y = N_x;
+x_range = [-6,30]; y_range = [-16,16];
+
+opt_sim.simulationName = 'twoEllipse_perpendicular'
+
+[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+
+
+%% Concave Obstacles
+opt_sim.dt = 0.003; %integration time steps
+opt_sim.i_max = 800; %maximum number of iterations
+
+taileffect = true;
+
+close all; clc;
+fprintf('Start 2D-Simulation \n');
+
+x_attractor = [0;0];
+ds_handle = @(x) linearStableDS(x, x_attractor);
+
+%fn_handle = @(x) parallelFlow_DS(x,-10);
+fn_handle_objAvoidance= @(x,xd,obs,b_contour,varargin) ...
+                          obs_modulation_convergence(x,xd,obs,b_contour, varargin);
+N = 20;
+x0 = [ones(1,N)*26 ; linspace(-15,20,N)];
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+obs{i}.a = [1.2;7];
+obs{i}.p = [1;1];
+obs{i}.x0 = [12;.0];
+obs{i}.sf = [1.1];
+obs{i}.th_r = 60*pi/180;
+obs{i}.x_center = [0.0;0];
+obs{i}.tailEffect = taileffect;
+
+i=2;
+obs{i}.a = [1.;9];
+obs{i}.p = [1;1];
+obs{i}.x0 = [12;10];
+%obs{i}.x0 = [12;6];
+obs{i}.sf = [1.1];
+obs{i}.th_r = 60*pi/180;
+obs{i}.x_center = [0.0;0];
+obs{i}.tailEffect = taileffect;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 2;
+obs{i}.perturbation.dx = [0;0];   
+obs{i}.perturbation.w = 10;  
+
+opt_sim.obstacle = obs;
+opt_sim.attractor = x_attractor;
+
+opt_sim.saveFig = true;             
+%opt_sim = rmfield(opt_sim, 'attractor' );
+
+% Simulation Parameters
+N_x = 25;  N_y = N_x;
 x_range = [-3,28]; y_range = [-14,14];
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+opt_sim.simulationName = 'three_ellipse_intersection'
+
+%[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
+
+%% Concave Obstacles
+opt_sim.dt = 0.003; %integration time steps
+opt_sim.i_max = 400; %maximum number of iterations
+
+taileffect = true;
+
+close all; clc;
+fprintf('Start 2D-Simulation \n');
+
+x_attractor = [0;0];
+ds_handle = @(x) linearStableDS(x, x_attractor);
+
+%fn_handle = @(x) parallelFlow_DS(x,-10);
+fn_handle_objAvoidance= @(x,xd,obs,b_contour,varargin) ...
+                          obs_modulation_convergence(x,xd,obs,b_contour, varargin);
+N = 20;
+x0 = [ones(1,N)*26 ; linspace(-15,20,N)];
+
+% Place obstacles
+obs = [];
+
+% obstacle 1
+i=1;
+obs{i}.a = [1.2;7];
+obs{i}.p = [1;1];
+obs{i}.x0 = [12;.0];
+obs{i}.sf = [1.1];
+obs{i}.th_r = 60*pi/180;
+obs{i}.x_center = [0.0;0];
+obs{i}.tailEffect = taileffect;
+
+i=2;
+obs{i}.a = [1.;9];
+obs{i}.p = [1;1];
+obs{i}.x0 = [12;18];
+%obs{i}.x0 = [12;6];
+obs{i}.sf = [1.1];
+obs{i}.th_r = -60*pi/180;
+obs{i}.x_center = [0.0;0];
+obs{i}.tailEffect = taileffect;
+obs{i}.perturbation.t0 = 0;
+obs{i}.perturbation.tf = 1.3;
+obs{i}.perturbation.dx = [0;-20];  
+
+
+opt_sim.obstacle = obs;
+opt_sim.attractor = x_attractor;
+
+opt_sim.saveFig = true;             
+%opt_sim = rmfield(opt_sim, 'attractor' );
+
+% Simulation Parameters
+N_x = 25;  N_y = N_x;
+x_range = [-3,28]; y_range = [-14,14];
+%x_range = [-10,10]; y_range = [-10,10];
+
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
 
 opt_sim.simulationName = 'three_ellipse_intersection'
 
-[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+%[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
 
 
 

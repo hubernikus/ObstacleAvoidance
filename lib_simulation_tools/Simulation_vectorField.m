@@ -1,11 +1,11 @@
-function [metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, fn_handle, varargin)
+function [metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, varargin)
 
 % General simualtion Parameters
 figPosition = [100 100 450 400];
 
 %% Set up Obstacle Avoidance Functions
 funcHandle = {};
-funcHandle{1} = @(x,xd,obs,b_contour,varargin) obs_modulation_IFD(x,xd,obs,b_contour, varargin);
+funcHandle{1} = @(x,xd,obs,varargin) obs_modulation_IFD(x,xd,obs, varargin);
 
 avoidanceType = {'convergence','initial'};
 
@@ -120,34 +120,34 @@ for it_time = 1:length(timeSteps)
     [x_obs_boundary, x_obs_sf] = obs_draw_ellipsoid(obs,50);
     
     % Find intersection of obstacles
-    [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(x_obs_sf);
+    [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(obs, x_obs_sf);
     for it_obs = intersection_obs
-        fprintf('not setting center \n')
-        x_center_dyn = x_center_dyn
-        %obs{it_obs}.x_center_dyn = x_center_dyn;
+        %fprintf('not setting center \n')
+        obs{it_obs}.x_center_dyn = x_center_dyn;
     end
     
     tic 
     [collisionMatrix,X_noCollision, Y_noCollision] = obs_check_collision(obs,X,Y); 
     for ix = 1:N_x
         for iy = 1:N_y
-            xd_bar(:,ix,iy) = fn_handle([X_noCollision(ix,iy);Y(ix,iy)]);
+            xd_bar(:,ix,iy) = ds_handle([X(ix,iy);Y(ix,iy)]);
             if(collisionMatrix(ix,iy))
-                xd_noColl(:,ix,iy) = fn_handle([X(ix,iy);Y_noCollision(ix,iy)]);
+                xd_noColl(:,ix,iy) = ds_handle([X_noCollision(ix,iy);Y_noCollision(ix,iy)]);
                 xd_converge(:,ix,iy)  = [0;0];
             else
                 xd_noColl(:,ix,iy) = xd_bar(:,ix,iy);
-                [xd_converge(:,ix,iy),~,~,compTime_ellips] = obs_modulation_convergence([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs, b_contour, xd_obs,w_obs);
+                [xd_converge(:,ix,iy),~,compTime_ellips] = obs_modulation_convergence([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs,  xd_obs,w_obs);
             end
         end
     end
+
     time_obstacleAvoidance = toc
 
     N_tot = N_x*N_y;
     relativeChangeSqr_ellip = sum(sum((squeeze(sum(xd_converge - xd_bar)).*collisionMatrix).^2))/N_tot;
     
         
-    figs = {};
+    
     %patchs = {};create list? maybe..
     %contours = {};
     
@@ -186,6 +186,8 @@ for it_time = 1:length(timeSteps)
     % Modified System
     figure(figs{1});
     streamslice(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
+    %quiver(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
+    
     %streamslice(X_noCollision(:,:), Y_noCollision(:,:), squeeze(xd_ellips(1,:,:)), squeeze(xd_ellips(2,:,:)), 'b')
 
     %figure(figs{2});
@@ -210,7 +212,7 @@ for it_time = 1:length(timeSteps)
         figure(figs{ii});
         for it_obs = 1:size(x_obs_boundary,3)
             %patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),0.*ones(1,size(x_obs_boundary,2)),[0.6 1 0.6]); hold on;
-            patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[0.6 1 0.6], 'FaceAlpha',1); hold on;
+            patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[0.6 1 0.6], 'FaceAlpha',0.2); hold on;
             contours = plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k--','LineWidth',1.2); hold on;
             
             mainAxis = get(patchs, 'Parent'); % Get main axis
@@ -258,6 +260,7 @@ for it_time = 1:length(timeSteps)
                 plot(pos(1),pos(2),'k+','LineWidth',2.3); hold on;
             end
         end
+        
         if intersection_sf
             patch(intersection_sf(1,:), intersection_sf(2,:),[0.4, 0.2, 0.3], 'FaceAlpha',0.5)
         end

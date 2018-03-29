@@ -1,4 +1,4 @@
-function [xd, b_contour, M, compTime] = obs_modulation_convergence(x,xd,obs,b_contour,varargin)
+function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 %
 % Obstacle avoidance module: Version 1.2, issued on July 30, 2015
 %
@@ -20,7 +20,7 @@ function [xd, b_contour, M, compTime] = obs_modulation_convergence(x,xd,obs,b_co
 % dynamic modulation matrix. 
 %
 % The function is called using:
-%       [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,xd_obs)
+%       [xd M] = obs_modulation_ellipsoid(x,xd,obs,xd_obs)
 %
 %
 % Inputs -----------------------------------------------------------------
@@ -52,18 +52,12 @@ function [xd, b_contour, M, compTime] = obs_modulation_convergence(x,xd,obs,b_co
 %           Please run 'Tutorial_Obstacle_Avoidance.m' for further information
 %           on how to use this obstacle avoidance module.
 %
-%   o b_contour: A boolean indicating whether the algorithm is in the
-%                contouring stage or not.
-%
 %   o xd_obs:    d x 1 column vector defining the obstacle velocity
 %
 % Outputs ----------------------------------------------------------------
 %
 %   o xd:        d x 1 column vector corresponding to the modulated
 %                robot velocity.
-%
-%   o b_contour: A boolean indicating whether the algorithm is in the
-%                contouring stage or not.
 %
 %   o M:         d x d matrix representing the dynamic modulation matrix.
 % 
@@ -84,7 +78,7 @@ xd_dx_obs = zeros(d,N);
 xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
 
 % Weird behavior of varargin when creating function handle, this can be
-% removed by adding this line. 
+% handled by adding this line.
 switch(class(varargin{1}))
      case 'cell'
          varargin = varargin{1};
@@ -126,7 +120,7 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
-    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
+    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n},R(:,:,n));
 %     if Gamma(n)<0.99
 %         disp(Gamma(n))
 %     end
@@ -141,7 +135,8 @@ for n=1:N
     if ~isfield(obs{n},'sigma')
         obs{n}.sigma = 1;
     end
-    xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
+    %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
+    xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... 
                                        (xd_dx_obs(:,n) + xd_w_obs(:,n)); 
 end
 xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
@@ -178,36 +173,16 @@ end
 
 E(:,:,n) = R(:,:,n)*E(:,:,n); %transforming the basis vector into the global coordinate system
 
-if b_contour==0 && (D(1) < -0.98) && (E(:,1,n)'*xd < 0) && (norm(M*xd)<0.02)
-    b_contour = true;
-    disp('Contouring started ... ')
-end
-
-if b_contour==1
-    contour_dir = sum(E(:,obs{n}.extra.ind,n),2); %extra.ind defines the desired eigenvalues to move along it
-    contour_dir = contour_dir/norm(contour_dir);
-%     disp(xd'*E(:,1,n))
-   
-    if (xd'*E(:,1,n)>0) %%(contour_dir'*M*xd >0 && norm(M*xd) > 0.05) || 
-        b_contour = false;
-        xd = M*xd; %velocity modulation
-        disp('Contouring stopped.')
-    else
-        %xd = obs{n}.extra.C_Amp*contour_dir; %extra.C_Amp is the desired amplitude of movement along the controuring direction
-        xd = norm(xd)*contour_dir; 
-    end
-else
-    xd = M*xd; %velocity modulation
+xd = M*xd; %velocity modulation
 %     if norm(M*xd)>0.05
 %         xd = norm(xd)/norm(M*xd)*M*xd; %velocity modulation
 %     end
-end
 
 xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
 
 compTime = toc;
 
-function [E Gamma] = compute_basis_matrix(d,x_t,obs)
+function [E Gamma] = compute_basis_matrix(d,x_t,obs, R)
 % For an arbitrary shap, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')
@@ -229,7 +204,11 @@ nv = (2*p./a.*(x_t./a).^(2*p - 1)); %normal vector of the tangential hyper-plane
 E = zeros(d,d);
 
 if isfield(obs, 'x_center_dyn') % automatic adaptation of center 
-    E(:,1) = - (x_t - (obs.x_center_dyn - obs.x0));
+    %R= compute_R(d, obs.th_r);
+    E(:,1) = - (x_t - R'*(obs.x_center_dyn - obs.x0));
+    
+    %E(:,1) = - (x_t - (obs.x_center.*obs.a))
+    %fprintf('remove')
 elseif isfield(obs, 'x_center') % For relative center
     E(:,1) = - (x_t - (obs.x_center.*obs.a));
 else
