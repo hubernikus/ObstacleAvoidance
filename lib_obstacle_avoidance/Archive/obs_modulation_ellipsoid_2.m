@@ -1,11 +1,11 @@
-function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
+function [xd b_contour M] = obs_modulation_ellipsoid_2(x,xd,obs,b_contour,xd_obs)
 %
-% Obstacle avoidance module: Version 1.2, issued on July 30, 2015
+% Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%   Copyright (c) 2011 S. Mohammad Khansari-Zadeh, LASA Lab, EPFL,    %%%
 %%%          CH-1015 Lausanne, Switzerland, http://lasa.epfl.ch         %%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % This function computes the sufficient modulation
 % due to the presence of obstacle(s) so that the generated trajectories
@@ -20,7 +20,7 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 % dynamic modulation matrix. 
 %
 % The function is called using:
-%       [xd M] = obs_modulation_ellipsoid(x,xd,obs,xd_obs)
+%       [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,xd_obs)
 %
 %
 % Inputs -----------------------------------------------------------------
@@ -52,12 +52,18 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 %           Please run 'Tutorial_Obstacle_Avoidance.m' for further information
 %           on how to use this obstacle avoidance module.
 %
+%   o b_contour: A boolean indicating whether the algorithm is in the
+%                contouring stage or not.
+%
 %   o xd_obs:    d x 1 column vector defining the obstacle velocity
 %
 % Outputs ----------------------------------------------------------------
 %
 %   o xd:        d x 1 column vector corresponding to the modulated
 %                robot velocity.
+%
+%   o b_contour: A boolean indicating whether the algorithm is in the
+%                contouring stage or not.
 %
 %   o M:         d x d matrix representing the dynamic modulation matrix.
 % 
@@ -68,45 +74,11 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 %     Realtime Obstacle Avoidance", Autonomous Robots, 2012
 %
 %%
-tic;
-
 N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
 
-xd_dx_obs = zeros(d,N);
-xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
-
-% Weird behavior of varargin when creating function handle, this can be
-% handled by adding this line.
-switch(class(varargin{1}))
-     case 'cell'
-         varargin = varargin{1};
-end    
-switch(class(varargin{2})) % weird behavior... 
-     case 'cell'
-         varargin{2} = varargin{2}{1};
-end    
-
-for i=1:length(varargin)
-    if ~isempty(varargin)
-        switch i
-            case 1
-                xd_dx_obs = varargin{1};
-            case 2
-                w_obs = varargin{2};
-                if d==2 && size(w_obs,1)==1 && size(w_obs,2)==N
-                    for n=1:N
-                        x_tmp = x-obs{n}.x0;
-                        xd_w_obs(:,n) = [-x_tmp(2);x_tmp(1)]*w_obs(n); %cross(w,x_tmp)
-                    end
-                end
-                if d==3 && length(w_obs)==d %supporting situation
-                    xd_w_obs = cross(w_obs,x_tmp);
-                end
-        end
-    end
-end
+xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
 
 if d==3
     E = zeros(d,d+1,N);
@@ -124,70 +96,63 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
-    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n},R(:,:,n));
-%     if Gamma(n)<0.99
-%         disp(Gamma(n))
-%     end
+    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
 end
 
+% [tmp, obs_order] = sort(Gamma,'descend');
 w = compute_weights(Gamma,N);
+obs_order = 1:N;
 
-%adding the influence of the rotational and cartesian velocity of the
-%obstacle to the velocity of the robot
-xd_obs = 0;
-for n=1:N
-    if ~isfield(obs{n},'sigma')
-        obs{n}.sigma = 1;
-    end
-    %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
-    xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... 
-                                       (xd_dx_obs(:,n) + xd_w_obs(:,n)); 
-end
-xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
-
-%ordering the obstacle number so as the closest one will be considered at
-%last (i.e. higher priority)
-[~,obs_order] = sort(Gamma,'descend');
-for n = obs_order
+for n = obs_order;
     if isfield(obs{n},'rho')
         rho = obs{n}.rho;
     else
         rho = 1;
     end
-    if isfield(obs{n},'eigenvalue')
-        d0 = obs{n}.eigenvalue;
-    else
-        d0 = ones(size(E,2)-1,1);
-    end
-        
-    D = w(n)*([-1;d0]/abs(Gamma(n))^(1/rho));
+    D = w(n)*([-1;ones(size(E,2)-1,1)]/abs(Gamma(n))^(1/rho));
+    
     if isfield(obs{n},'tailEffect') && ~obs{n}.tailEffect && xd'*R(:,:,n)*E(:,1,n)>=0 %the obstacle is already passed, no need to do anything
         D(1) = 0.0;
     end
     
     if D(1) < -1.0
-        D(2:end) = d0;
+        D(2:end) = 1.0;
         if xd'*R(:,:,n)*E(:,1,n) < 0
+            D(1) = -1.0;
+        else
             D(1) = -1.0;
         end
     end
     
-    M = (R(:,:,n)*E(:,:,n)*diag(D+[1;d0])/E(:,:,n)*R(:,:,n)')*M;
+    M = (R(:,:,n)*E(:,:,n)*diag(D+1)/E(:,:,n)*R(:,:,n)')*M;
 end
 
 E(:,:,n) = R(:,:,n)*E(:,:,n); %transforming the basis vector into the global coordinate system
 
-xd = M*xd; %velocity modulation
-%     if norm(M*xd)>0.05
-%         xd = norm(xd)/norm(M*xd)*M*xd; %velocity modulation
-%     end
+if b_contour==0 && (D(1) < -0.98) && (E(:,1,n)'*xd < 0) && (norm(M*xd)<0.02)
+    b_contour = true;
+    disp('Contouring started ... ')
+end
 
-xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
+if b_contour==1
+    contour_dir = sum(E(:,obs{n}.extra.ind,n),2); %extra.ind defines the desired eigenvalues to move along it
+    contour_dir = contour_dir/norm(contour_dir);
+   
+    if (contour_dir'*M*xd >0 && norm(M*xd) > 0.05) || (xd'*E(:,1,n)>0)
+        b_contour = false;
+        xd = M*xd; %velocity modulation
+        disp('Contouring stopped.')
+    else
+        xd = obs{n}.extra.C_Amp*contour_dir; %extra.C_Amp is the desired amplitude of movement along the controuring direction
+    end
+else
+    xd = M*xd; %velocity modulation
+end
 
-compTime = toc;
+xd = xd + xd_obs ; %transforming back the velocity into the global coordinate system
 
-function [E Gamma] = compute_basis_matrix(d,x_t,obs, R)
-% For an arbitrary shap, the next two lines are used to find the shape segment
+function [E Gamma] = compute_basis_matrix(d,x_t,obs)
+% For an arbitrary shape, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')
     ind = find(th>=(obs.partition(:,1)) & th<=(obs.partition(:,2)),1);
@@ -202,23 +167,11 @@ end
 p = obs.p(:,ind);
 Gamma = sum((x_t./a).^(2*p));
 
-nv = (2*p./a.*(x_t./a).^(2*p - 1)); %normal vector of the tangential hyper-plane
+nv = (2*p.*(x_t./a).^(2*p - 1))./a; %normal vector of the tangential hyper-plane
 
 %generating E, for a 2D model it simply is: E = [dx [-dx(2);dx(1)]];
 E = zeros(d,d);
-
-if isfield(obs, 'x_center_dyn') % automatic adaptation of center 
-    %R= compute_R(d, obs.th_r);
-    E(:,1) = - (x_t - R'*(obs.x_center_dyn - obs.x0));
-    
-    %E(:,1) = - (x_t - (obs.x_center.*obs.a))
-    %fprintf('remove')
-elseif isfield(obs, 'x_center') % For relative center
-    E(:,1) = - (x_t - (obs.x_center.*obs.a));
-else
-    E(:,1) = - x_t;
-end
-
+E(:,1) = nv;
 E(1,2:d) = nv(2:d)';
 E(2:d,2:d) = -eye(d-1)*nv(1);
 
@@ -227,15 +180,15 @@ if d == 3
 end
 
 
-% function w = compute_weights(Gamma,N)
-% w = zeros(1,N);
-% Gamma(Gamma<1) = 1;
-% Gamma = Gamma-1;
-% for i=1:N
-%     ind = 1:N;
-%     ind(i) = [];
-%     w(i) = prod(Gamma(ind)./(Gamma(i)+Gamma(ind)));
-% end
+function w = compute_weights(Gamma,N)
+w = zeros(1,N);
+Gamma(Gamma<1) = 1;
+Gamma = Gamma-1;
+for i=1:N
+    ind = 1:N;
+    ind(i) = [];
+    w(i) = prod(Gamma(ind)./(Gamma(i)+Gamma(ind)));
+end
 
 
 function R = compute_R(d,th_r)

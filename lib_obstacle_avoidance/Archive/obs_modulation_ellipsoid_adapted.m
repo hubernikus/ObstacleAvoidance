@@ -1,6 +1,6 @@
-function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
+function [xd b_contour M] = obs_modulation_ellipsoid_adapted(x,xd,obs,b_contour,varargin)
 %
-% Obstacle avoidance module: Version 1.2, issued on July 30, 2015
+% Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%   Copyright (c) 2011 S. Mohammad Khansari-Zadeh, LASA Lab, EPFL,    %%%
@@ -20,7 +20,7 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 % dynamic modulation matrix. 
 %
 % The function is called using:
-%       [xd M] = obs_modulation_ellipsoid(x,xd,obs,xd_obs)
+%       [xd b_contour M] = obs_modulation_ellipsoid(x,xd,obs,b_contour,xd_obs)
 %
 %
 % Inputs -----------------------------------------------------------------
@@ -52,12 +52,18 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 %           Please run 'Tutorial_Obstacle_Avoidance.m' for further information
 %           on how to use this obstacle avoidance module.
 %
+%   o b_contour: A boolean indicating whether the algorithm is in the
+%                contouring stage or not.
+%
 %   o xd_obs:    d x 1 column vector defining the obstacle velocity
 %
 % Outputs ----------------------------------------------------------------
 %
 %   o xd:        d x 1 column vector corresponding to the modulated
 %                robot velocity.
+%
+%   o b_contour: A boolean indicating whether the algorithm is in the
+%                contouring stage or not.
 %
 %   o M:         d x d matrix representing the dynamic modulation matrix.
 % 
@@ -68,25 +74,22 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 %     Realtime Obstacle Avoidance", Autonomous Robots, 2012
 %
 %%
-tic;
-
 N = length(obs); %number of obstacles
 d = size(x,1);
 Gamma = zeros(1,N);
+
+
+xd_init = xd;
 
 xd_dx_obs = zeros(d,N);
 xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
 
 % Weird behavior of varargin when creating function handle, this can be
-% handled by adding this line.
+% removed by adding this line. 
 switch(class(varargin{1}))
      case 'cell'
          varargin = varargin{1};
-end    
-switch(class(varargin{2})) % weird behavior... 
-     case 'cell'
-         varargin{2} = varargin{2}{1};
-end    
+end  
 
 for i=1:length(varargin)
     if ~isempty(varargin)
@@ -124,7 +127,7 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
-    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n},R(:,:,n));
+    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
 %     if Gamma(n)<0.99
 %         disp(Gamma(n))
 %     end
@@ -135,20 +138,55 @@ w = compute_weights(Gamma,N);
 %adding the influence of the rotational and cartesian velocity of the
 %obstacle to the velocity of the robot
 xd_obs = 0;
+%xd_obs = [0;-0.0001]; % REMOVE
 for n=1:N
     if ~isfield(obs{n},'sigma')
         obs{n}.sigma = 1;
     end
-    %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
-    xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... 
+    xd_obs = xd_obs + w(n) * exp(-1/obs{n}.sigma*(max([Gamma(n) 1])-1))* ... %the exponential term is very helpful as it help to avoid the crazy rotation of the robot due to the rotation of the object
                                        (xd_dx_obs(:,n) + xd_w_obs(:,n)); 
 end
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% COMMENT: smallest deviation not good idea, as it does not converge
+[x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
+    
+% already for simple system ( smallest rotation mode..)
+% 2nd try: stay on CM of object
+[phi_max, phi_mid, deltaPhi, phi_CM] = findMaxAngle(x_obs, x_obs_sf, x);
+
+phi_xd = atan2(xd(2),xd(1)); % direction of the TI DS
+
+% % Check eter point is moving towards object: 1 if attacking body, 0 if
+% going away
+velTowardsBody = and((dirAngleDiff(phi_xd,phi_max(1))>0), ...
+                        (dirAngleDiff(phi_max(2),phi_xd)>0));
+                    
+movingTowards = false;
+% Object moving towards me...
+if(sum(abs(xd_obs)))
+    if(dot(xd_obs,x-obs{1}.x0)< 0) % Obstacle is moving towards me
+        %if(dot(xd, x-obs{1}.x0) < 0) % Point is moving towards object
+        if velTowardsBody
+            movingTowards = true;
+        end
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 xd = xd-xd_obs; %computing the relative velocity with respect to the obstacle
+xd_init_rel = xd;
+
+
+
+
 
 %ordering the obstacle number so as the closest one will be considered at
 %last (i.e. higher priority)
 [~,obs_order] = sort(Gamma,'descend');
-for n = obs_order
+for n = obs_order;
     if isfield(obs{n},'rho')
         rho = obs{n}.rho;
     else
@@ -177,16 +215,72 @@ end
 
 E(:,:,n) = R(:,:,n)*E(:,:,n); %transforming the basis vector into the global coordinate system
 
-xd = M*xd; %velocity modulation
+if b_contour==0 && (D(1) < -0.98) && (E(:,1,n)'*xd < 0) && (norm(M*xd)<0.02)
+    b_contour = true;
+    disp('Contouring started ... ')
+end
+
+if b_contour==1
+    contour_dir = sum(E(:,obs{n}.extra.ind,n),2); %extra.ind defines the desired eigenvalues to move along it
+    contour_dir = contour_dir/norm(contour_dir);
+    %disp(xd'*E(:,1,n))
+   
+    if (xd'*E(:,1,n)>0) %%(contour_dir'*M*xd >0 && norm(M*xd) > 0.05) || 
+        b_contour = false;
+        xd = M*xd; %velocity modulation
+        disp('Contouring stopped.')
+    else
+        %xd = obs{n}.extra.C_Amp*contour_dir; %extra.C_Amp is the desired amplitude of movement along the controuring direction
+        xd = norm(xd)*contour_dir; 
+    end
+else
+    xd = M*xd; %velocity modulation
 %     if norm(M*xd)>0.05
 %         xd = norm(xd)/norm(M*xd)*M*xd; %velocity modulation
 %     end
+end
+
+% xd_new = xd;
+% if movingTowards
+%     n_xdInit = xd_init_rel/norm(xd_init_rel); % unit vecotr in direction of initial velocity
+%     delta_xd = xd_new-n_xdInit*dot(xd_new, n_xdInit);
+%     if(dot(delta_xd, xd_obs) > 0) % modulation is in same direction as object velocity
+%         xd = xd_new - 2* delta_xd;
+%     end
+% end
 
 xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
 
-compTime = toc;
 
-function [E Gamma] = compute_basis_matrix(d,x_t,obs, R)
+%xd = 0;
+% Mirror if moving in wrong direction. 
+% %movingTowards = true;
+% if movingTowards
+%     n_xdInit = xd_init/norm(xd_init); % unit vecotr in direction of initial velocity
+%     delta_xd = xd_new-n_xdInit*dot(xd_new, n_xdInit);
+%     if(dot(delta_xd, xd_obs) > 0) % modulation is in same direction as object velocity
+%         xd = xd_new - 2* delta_xd;
+%     end
+% end
+
+
+% Mirror at NORMAL  if moving in wrong direction. 
+%movingTowards = true;
+if movingTowards
+
+    [~,n_minDist] = findMinDistance(x_obs_sf, x);
+    
+    %n_xdInit = xd_init/norm(xd_init); % unit vecotr in direction of initial velocity
+    delta_xd = xd-n_minDist*dot(xd, n_minDist);
+    
+    if(dot(delta_xd, xd_obs) > 0) % modulation is in same direction as object velocity
+        xd = xd - 2* delta_xd;
+    end
+end
+
+end
+
+function [E Gamma] = compute_basis_matrix(d,x_t,obs)
 % For an arbitrary shap, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')
@@ -206,37 +300,27 @@ nv = (2*p./a.*(x_t./a).^(2*p - 1)); %normal vector of the tangential hyper-plane
 
 %generating E, for a 2D model it simply is: E = [dx [-dx(2);dx(1)]];
 E = zeros(d,d);
-
-if isfield(obs, 'x_center_dyn') % automatic adaptation of center 
-    %R= compute_R(d, obs.th_r);
-    E(:,1) = - (x_t - R'*(obs.x_center_dyn - obs.x0));
-    
-    %E(:,1) = - (x_t - (obs.x_center.*obs.a))
-    %fprintf('remove')
-elseif isfield(obs, 'x_center') % For relative center
-    E(:,1) = - (x_t - (obs.x_center.*obs.a));
-else
-    E(:,1) = - x_t;
-end
-
+E(:,1) = nv;
 E(1,2:d) = nv(2:d)';
 E(2:d,2:d) = -eye(d-1)*nv(1);
 
 if d == 3
     E(:,end+1) = [0;-nv(3);nv(2)];
 end
+end
 
 
-% function w = compute_weights(Gamma,N)
-% w = zeros(1,N);
-% Gamma(Gamma<1) = 1;
-% Gamma = Gamma-1;
-% for i=1:N
-%     ind = 1:N;
-%     ind(i) = [];
-%     w(i) = prod(Gamma(ind)./(Gamma(i)+Gamma(ind)));
-% end
+function w = compute_weights(Gamma,N)
+w = zeros(1,N);
+Gamma(Gamma<1) = 1;
+Gamma = Gamma-1;
+for i=1:N
+    ind = 1:N;
+    ind(i) = [];
+    w(i) = prod(Gamma(ind)./(Gamma(i)+Gamma(ind)));
+end
 
+end
 
 function R = compute_R(d,th_r)
 % rotating the query point into the obstacle frame of reference
@@ -250,4 +334,87 @@ elseif d == 3
     R = R_x*R_y*R_z;
 else %rotation is not yet supported for d > 3
     R = eye(d);
+end
+
+end
+
+%% NEW functions
+function [min_dist,n_minDist] = findMinDistance(x_obs_sf, refPoint)
+% find the minimum distance and correpsonding angle
+    [min_dist, indMin] = min(sum((x_obs_sf-refPoint).^2,1),[],2);
+    
+    % Eucledian distance
+    min_dist = sqrt(min_dist);
+    
+    n_minDist = [x_obs_sf(1,indMin)-refPoint(1);x_obs_sf(2,indMin)-refPoint(2)];
+    n_minDist = n_minDist/norm(n_minDist);
+end
+
+function [phi_max, phi_mean, delta_phi, phi_CM] = findMaxAngle(x_obs_ref, x_obs_sf, refPoint)
+% find the most extreme angles
+% if phi_mid < 0 -> concave
+    phi_CM = atan2(x_obs_ref(2)-refPoint(2),x_obs_ref(1)-refPoint(1));
+    
+    phi = atan2(x_obs_sf(2,:)-refPoint(2),x_obs_sf(1,:)-refPoint(1));
+
+    % Find largest gap -> there is the opening of concave/convex object
+    [phi_sort, ~] = sort(phi);
+    
+    lastAngle = angleSubtraction360(phi_sort(1),phi_sort(end));
+    deltaPhi = [phi_sort(2:end)-phi_sort(1:end-1), lastAngle];
+                        
+    [valMax,indMax] = max(deltaPhi);
+    
+    % vis-a-vis of the largest opening is the center of the object
+    phi_mean = addAngle(phi_sort(indMax)+0.5*valMax+pi); 
+        
+    phiCentered = angleSubtraction(phi,phi_mean);
+    phi_max = [min(phiCentered), max(phiCentered)];
+    delta_phi = angleSubtraction360(phi_max(1), phi_max(2)); % how indicies!!!!
+    
+    phi_max = addAngle(phi_max, phi_mean); % return in original reference frame
+end
+
+function dPhi = angleSubtraction360(alpha, beta)
+% subtracts two angles, range into range between 0 to 2pi
+    dPhi = alpha-beta;
+    dPhi = dPhi+(dPhi<0)*2*pi;
+end
+
+function dPhi = angleSubtraction(alpha, beta)
+% subtracts to angles intor range -pi to pi
+    dPhi = alpha-beta;
+    dPhi = dPhi+(dPhi<-pi)*2*pi-(dPhi>pi)*2*pi;
+end
+
+
+function dPhi = addAngle(alpha, beta)
+% subtracts to angles and 
+    if nargin<2 beta=0; end
+   
+    dPhi = alpha+beta;
+    while(or(dPhi > pi, dPhi < - pi))
+        dPhi = dPhi+(dPhi<-pi)*2*pi-(dPhi>pi)*2*pi;
+    end
+end
+
+function dPhi = angleDiff(alpha, beta)
+% Caluclates the minimal difference between the angles
+
+% Enable scalar & vector compability
+Na = legnth(alpha);
+Nb = length(beta);
+if(and(Na>1,Nb>1, Na~=Nb))
+    error('Dimension missmatch')
+end
+
+end
+
+function dPhi = dirAngleDiff(alpha, beta)
+% Caluclates the minimal difference between the angles including sign!
+% negative -> beta in direction counterclock of alpha
+% positive -> alpha in direction counterclock of beta
+    diff = alpha-beta;
+    dPhi = diff +  2*pi*(diff<-pi) - 2*pi*(diff > pi);
+
 end

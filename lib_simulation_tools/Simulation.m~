@@ -207,22 +207,24 @@ while true
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % This part if for the obstacle avoidance module
     if obs_bool
-        
-        % Draw obstacles
-        [~, x_obs_sf] = obs_draw_ellipsoid(obs,50);
-        
         w_obs = zeros( 1, length(obs) );
         xd_obs = zeros( d, length(obs) );
         
-        if length(obs)>0
-            % Check wheter there is an overlapping of obstacles
-            [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(obs, x_obs_sf);
-        end
+        % Check wheter there is an overlapping of obstacles
+        [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(obs);
         
+        
+        obsx_center_dyn =
         % applying perturbation on the obstacles
         for n=1:length(obs)
-            obs = calculate_dynamic_center(obs, x_obs_sf);
-            
+            if sum(ismember(intersection_obs,n))
+                % Intersection with another obstacle
+                obs{n}.x_center_dyn = x_center_dyn;
+            else
+                if isfield(obs{n},'x_center_dyn')
+                    obs{n} = rmfield(obs{n},'x_center_dyn');
+                end
+            end
             plot_results('c',sp,x,xT,n, obs);
             
             % Initialize Obstacles

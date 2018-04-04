@@ -25,6 +25,18 @@ else
     saveFig = 0;
 end
 
+if isfield(options, 'color_map')
+    color_map = options.color_map;
+else
+    color_map = redblue(200);
+end
+
+if isfield(options, 'analysis_type')
+    analysis_type = options.analysis_type;
+else
+    analysis_type = 'analytic';
+end
+
 
 if isfield(options, 'obstacle')
     obs = options.obstacle;
@@ -80,11 +92,26 @@ U = U.*not(collisionMatrix);
 V = V.*not(collisionMatrix);
 
 % Divergence
-div = divergence(X,Y,U,V);
-div(isnan(div)) = 0;
-%div = div.*not(collisionMatrix);
+switch analysis_type
+    case 'analytic'
+        %divergence_velocityField(x, obs)
+        div = zeros(size(X));
+        
+        for ix = 1:N_x
+            for iy= 1:N_y
+                %[divVal(ix,iy), U(ix,iy),V(ix,iy),Gamma(ix,iy),T1(ix,iy),T2(ix,iy)] ...
+                   div(ix,iy) = divergence_velocityField([X(ix,iy); Y(ix,iy)], obs);
+            end
+        end
+    case 'numeric'
+        div = divergence(X,Y,U,V);
+        div(isnan(div)) = 0;
+        %div = div.*not(collisionMatrix);
+    otherwise
+        fprintf('Analysis type not defined \n');
+end
 
-%
+
 safetyMatrix = ones(size(collisionMatrix));
 
 for ix = 2:N_x-1
@@ -98,8 +125,6 @@ for ix = 2:N_x-1
         end
     end
 end
-        
-map_redBlue = redblue(200);
 
 divSafety = div.*safetyMatrix;
 %divSafety = div.*not(collisionMatrix);
@@ -108,22 +133,25 @@ divSafety = div.*safetyMatrix;
 divRange = 2.1;
 
 figure('Position', figPosition);
-% Colormap
-imagesc(x_range, y_range, divSafety); hold on;
-colormap(map_redBlue);
-colorbar;
-caxis(divRange*[-1,1])
+if sum(sum(color_map)) ~= 0
+    % Colormap
+    imagesc(x_range, y_range, divSafety); hold on;
+    colormap(color_map);
+    colorbar;
+    %caxis(divRange*[-1,1])
+    caxis(3.1*[-1,1]-2)
+end
 
 % Vectorfield
 stream = streamslice(X, Y, U, V,'k'); hold on;
-set( stream, 'Color', [0.4 0.4 0.4] );
+set(stream, 'Color', [0.4 0.4 0.4] );
 
 if obsExist
     % Draw obstacle
     [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
     for it_obs = 1:size(x_obs,3)
-        patch(x_obs(1,:,it_obs),x_obs(2,:,it_obs),[0.6 1 0.6],'FaceAlpha',1)
-        plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k--')
+        patch(x_obs(1,:,it_obs),x_obs(2,:,it_obs),[0.7 0.7 0.7],'FaceAlpha',0.4)
+        plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k-','LineWidth',3)
     end
 
     % Plot Obstacle Center
