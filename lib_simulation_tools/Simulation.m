@@ -214,17 +214,16 @@ while true
         w_obs = zeros( 1, length(obs) );
         xd_obs = zeros( d, length(obs) );
         
-        if length(obs)>0
+        if length(obs)>1
             % Check wheter there is an overlapping of obstacles
             [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(obs, x_obs_sf);
+            obs = calculate_dynamic_center(obs, x_obs_sf, intersection_obs);
+            plot_results('c',sp,x,xT,n, obs);
         end
         
         % applying perturbation on the obstacles
         for n=1:length(obs)
-            obs = calculate_dynamic_center(obs, x_obs_sf);
-            
-            plot_results('c',sp,x,xT,n, obs);
-            
+
             % Initialize Obstacles
             w_obs(n) = 0;
             xd_obs(:,n) = [0;0];
@@ -247,7 +246,6 @@ while true
                 end
             end
         end
-        
 
         for j=1:nbSPoint
             %[xd(:,iSim,j), b_contour(j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);

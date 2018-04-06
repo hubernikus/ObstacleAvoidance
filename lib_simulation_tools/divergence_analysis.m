@@ -6,6 +6,8 @@ function [] = divergence_analysis(ds_handle, fn_handle_objAvoidance, ...
 % Only implemented for 2D so far
 dim = 2;
 
+
+% Satrt <<Initilaization>>
 if isfield(options, 'attractor') % if no attractor -> 'None'
     attractor = options.attractor;
 else
@@ -37,6 +39,13 @@ else
     analysis_type = 'analytic';
 end
 
+if isfield(options, 'colorAxis')
+    colorAxis = options.colorAxis;
+    colorString = num2str(mean(options.colorAxis));
+else
+    colorAxis = 3.1*[-1,1]-2;
+    colorString = num2str(mean(options.colorAxis));
+end
 
 if isfield(options, 'obstacle')
     obs = options.obstacle;
@@ -51,7 +60,9 @@ if isfield(options, 'obstacle')
 else
     obsExist = false;
 end
+% End <<initialization>>
 
+% Create figure with vector field
 figPosition = [100 100 675 600];
 
 % Simulation Parameters
@@ -68,6 +79,7 @@ else
     collisionMatrix = zeros(size(X));
 end
 
+
 for ix = 1:N_x
     for iy = 1:N_y
 %         if collisionMatrix(ix,iy)
@@ -82,6 +94,22 @@ for ix = 1:N_x
 %         end
     end
 end
+
+
+safetyMatrix = ones(size(collisionMatrix));
+
+for ix = 2:N_x-1
+    for iy = 2:N_y-1
+        if(collisionMatrix(ix,iy))
+            for dx = -1:1
+                for dy = -1:1
+                    safetyMatrix(ix+dx,iy+dy)=0;
+                end
+            end
+        end
+    end
+end
+
 
 %figure;
 %streamslice(X, Y, U, V); hold on;
@@ -103,30 +131,19 @@ switch analysis_type
                    div(ix,iy) = divergence_velocityField([X(ix,iy); Y(ix,iy)], obs);
             end
         end
+        divSafety = div;
     case 'numeric'
         div = divergence(X,Y,U,V);
         div(isnan(div)) = 0;
+        divSafety = div.*safetyMatrix;
         %div = div.*not(collisionMatrix);
     otherwise
         fprintf('Analysis type not defined \n');
 end
 
 
-safetyMatrix = ones(size(collisionMatrix));
 
-for ix = 2:N_x-1
-    for iy = 2:N_y-1
-        if(collisionMatrix(ix,iy))
-            for dx = -1:1
-                for dy = -1:1
-                    safetyMatrix(ix+dx,iy+dy)=0;
-                end
-            end
-        end
-    end
-end
-
-divSafety = div.*safetyMatrix;
+%divSafety = div.*safetyMatrix;
 %divSafety = div.*not(collisionMatrix);
 
 %divRange = max(max(abs(divSafety)));
@@ -139,18 +156,19 @@ if sum(sum(color_map)) ~= 0
     colormap(color_map);
     colorbar;
     %caxis(divRange*[-1,1])
-    caxis(3.1*[-1,1]-2)
+    caxis(colorAxis)
+    %caxis(2.1*[-1,1]-1)
 end
 
 % Vectorfield
 stream = streamslice(X, Y, U, V,'k'); hold on;
-set(stream, 'Color', [0.4 0.4 0.4] );
+set(stream, 'Color', [0.2 0.2 0.2] );
 
 if obsExist
     % Draw obstacle
     [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
     for it_obs = 1:size(x_obs,3)
-        patch(x_obs(1,:,it_obs),x_obs(2,:,it_obs),[0.7 0.7 0.7],'FaceAlpha',0.4)
+        patch(x_obs(1,:,it_obs),x_obs(2,:,it_obs),[0.2 0.2 0.2],'FaceAlpha',0.8)
         plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k-','LineWidth',3)
     end
 
@@ -177,6 +195,7 @@ axis equal;
 xlim(x_range); ylim(y_range);
 
 if saveFig
-    print(strcat('fig_vector/divergenceAnalysis_',simulationName,'.eps'),'-depsc')
+    print(strcat('fig_vector/divergenceAnalysis_',simulationName, ...
+                 'colorMean',colorString,'.eps'),'-depsc')
 end
 end

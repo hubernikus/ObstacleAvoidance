@@ -231,22 +231,24 @@ switch mode
         end
         
     case 'c' % adapt center case
-        n = varargin{1};
+        n_obs = varargin{1};
         obs = varargin{2};
         if d == 2
-            if isfield(obs{n}, 'x_center_dyn')
-                set(sp.x_center(n), 'XData', obs{n}.x_center_dyn(1));
-                set(sp.x_center(n), 'YData', obs{n}.x_center_dyn(2));
-            else
-                if ~isfield(obs{n}, 'x_center')
-                    obs{n}.x_center = [0;0];
+            for n = 1:n_obs
+                if isfield(obs{n}, 'x_center_dyn')
+                    set(sp.x_center(n), 'XData', obs{n}.x_center_dyn(1));
+                    set(sp.x_center(n), 'YData', obs{n}.x_center_dyn(2));
+                else
+                    if ~isfield(obs{n}, 'x_center')
+                        obs{n}.x_center = [0;0];
+                    end
+                    cosAng = cos(obs{n}.th_r);
+                    sinAng = sin(obs{n}.th_r);
+                    R = [cosAng, -sinAng; sinAng, cosAng];
+                    pos = obs{n}.x0 + R*(obs{n}.a.*obs{n}.x_center);
+                    set(sp.x_center(n), 'XData', pos(1))
+                    set(sp.x_center(n), 'YData', pos(2))
                 end
-                cosAng = cos(obs{n}.th_r);
-                sinAng = sin(obs{n}.th_r);
-                R = [cosAng, -sinAng; sinAng, cosAng];
-                pos = obs{n}.x0 + R*(obs{n}.a.*obs{n}.x_center);
-                set(sp.x_center(n), 'XData', pos(1))
-                set(sp.x_center(n), 'YData', pos(2))
             end
         elseif d==3
             warning('3d case not yet implemented \n');

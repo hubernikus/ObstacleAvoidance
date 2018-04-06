@@ -123,7 +123,7 @@ for n=1:N
         for i=1:size(obs{n}.partition,1)
             ind(i,:) = theta>=(obs{n}.partition(i,1)) & theta<=(obs{n}.partition(i,2));
         end
-        [i ind]=max(ind);
+        [i, ind]=max(ind);
     else
         ind = 1;
     end
@@ -161,23 +161,24 @@ for n=1:N
 end
 end
 
-function R = compute_R(d,th_r)
-% rotating the query point into the obstacle frame of reference
-
-if d == 2 
-    R = [cos(th_r(1)) -sin(th_r(1));sin(th_r(1)) cos(th_r(1))];
-elseif d == 3
-    R_x = [ 1, 0, 0; 0, cos(th_r(1)), sin(th_r(1)); 0, -sin(th_r(1)), cos(th_r(1))];
-    R_y = [cos(th_r(2)), 0, -sin(th_r(2)); 0, 1, 0; sin(th_r(2)), 0, cos(th_r(2))];
-    R_z = [cos(th_r(3)), sin(th_r(3)), 0; -sin(th_r(3)), cos(th_r(3)), 0; 0, 0, 1];
-    R = R_x*R_y*R_z;
-else %rotation is not yet supported for d > 3
-    R = eye(d);
-end
-end
+% function R = compute_R(d,th_r)
+% % rotating the query point into the obstacle frame of reference
+% 
+% if d == 2 
+%     R = [cos(th_r(1)) -sin(th_r(1));sin(th_r(1)) cos(th_r(1))];
+% elseif d == 3
+%     R_x = [ 1, 0, 0; 0, cos(th_r(1)), sin(th_r(1)); 0, -sin(th_r(1)), cos(th_r(1))];
+%     R_y = [cos(th_r(2)), 0, -sin(th_r(2)); 0, 1, 0; sin(th_r(2)), 0, cos(th_r(2))];
+%     R_z = [cos(th_r(3)), sin(th_r(3)), 0; -sin(th_r(3)), cos(th_r(3)), 0; 0, 0, 1];
+%     R = R_x*R_y*R_z;
+% else %rotation is not yet supported for d > 3
+%     R = eye(d);
+% end
+% end
 
 
 function x = ellipsFold(x, x0, concaveAng)
+% Obsolete --- Remove
 x = x-x0; % center
 
 normX = sqrt(sum(x.^2,1));
@@ -195,6 +196,7 @@ end
 
 
 function phi = foldFunction_lin(phi, concaveAng)
+% Obsolete --- Remove
 absPhi = abs(phi);
 
 for i = 1:length(absPhi)

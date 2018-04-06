@@ -3,16 +3,15 @@ function [ w ] = compute_weights( distMeas, N , distMeas_min, weightType)
 %   Detailed explanation goes here
 
 if nargin < 3
-    distMeas_min = 0;
+    % If Gamma is used as measurement: min=1
+    distMeas_min = 1;
 end
-
 if nargin < 4
+    % Type of operation later on
     weightType = 'inverseGamma';
 end
 
-if distMeas_min % different to zero
-    distMeas = max(0, distMeas-distMeas_min);
-end
+distMeas = max(0, distMeas-distMeas_min);
 
 w = zeros(1,N);
 
@@ -42,8 +41,9 @@ switch weightType
        end
        % Add normalization -- not in original
        w = w/sum(w);
+
     otherwise
-        warning("Unkown method \n");
-end
+        warning("Unkown weighting method.");
+
 
 end

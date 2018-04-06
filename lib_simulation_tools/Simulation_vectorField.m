@@ -185,8 +185,8 @@ for it_time = 1:length(timeSteps)
     tic 
     % Modified System
     figure(figs{1});
-    streamslice(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
-    %quiver(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
+    %streamslice(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
+    quiver(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
     
     %streamslice(X_noCollision(:,:), Y_noCollision(:,:), squeeze(xd_ellips(1,:,:)), squeeze(xd_ellips(2,:,:)), 'b')
 

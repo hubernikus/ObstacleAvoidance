@@ -4,7 +4,10 @@ if nargin<2
     x0 = [0;0];
 end
 
-xd = - (x-x0);
+dim = size(x,1);
+
+%xd = -(x-x0);
+xd = x0-x;
 
 end
 
