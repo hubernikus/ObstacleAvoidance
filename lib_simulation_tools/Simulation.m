@@ -104,7 +104,7 @@ else
     obsFunc_handle = options.obstacleAvoidanceFunction;
 end
 
-if options.model == 2; %2nd order
+if options.model == 2 %2nd order
     d=size(x0,1)/2; %dimension of the model
     if isempty(xT)
         xT = zeros(2*d,1);
@@ -189,6 +189,14 @@ if options.plot %plotting options
     end
 end
 
+if isfield(options,'attractor')
+    attractor = options.attractor;
+else
+    attractor = [];
+end
+
+
+
 %% Simulation
 iSim=1;
 while true
@@ -216,7 +224,8 @@ while true
         
         if length(obs)>1
             % Check wheter there is an overlapping of obstacles
-            [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(obs, x_obs_sf);
+            [obs, intersection_obs]  = obs_common_section(obs, x_obs_sf);
+            
             obs = calculate_dynamic_center(obs, x_obs_sf, intersection_obs);
             plot_results('c',sp,x,xT,n, obs);
         end
@@ -249,7 +258,7 @@ while true
 
         for j=1:nbSPoint
             %[xd(:,iSim,j), b_contour(j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
-            [xd(:,iSim,j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs, w_obs);
+            [xd(:,iSim,j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs, w_obs, attractor);
         end
         
         for n=1:length(obs) % integration of object (linear motion!) -- first order.. 
@@ -293,7 +302,7 @@ while true
                 if options.plot %plotting options
                     plot_results('t',sp,x,xT);
                 end
-            else
+            elseintersection_sf
                 xT(:,end+1) = xT(:,end);
             end
         case 'rcp' %applying robot continuous perturbation
@@ -315,11 +324,13 @@ while true
     xd_3last(isnan(xd_3last)) = 0;
     
     % Check collision
-    for ix = 1:size(x,3)
-        [coll, ~,~] = obs_check_collision(obs, x(1,end,ix), x(2,end,ix));
-        if coll
-            plot(x(1,end,ix), x(2,end,ix), 'kd', 'LineWidth', 2); hold on;
-            warning('Collision detected at x=[%f2.3, %f2.3]', x(1,end,ix),x(2,end,ix))
+    if obs_bool 
+        for ix = 1:size(x,3)
+            [coll, ~,~] = obs_check_collision(obs, x(1,end,ix), x(2,end,ix));
+            if coll
+                plot(x(1,end,ix), x(2,end,ix), 'kd', 'LineWidth', 2); hold on;
+                warning('Collision detected at x=[%f2.3, %f2.3]', x(1,end,ix),x(2,end,ix))
+            end
         end
     end
     

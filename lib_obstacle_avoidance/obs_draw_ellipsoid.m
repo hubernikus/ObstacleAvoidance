@@ -96,6 +96,7 @@ else
     phi = phi(:)';
 end
 
+
 np = prod(ns);
 
 N = length(obs); %number of obstacles

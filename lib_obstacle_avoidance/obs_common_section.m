@@ -1,4 +1,4 @@
-function [ intersection_sf, x_center_dyn, intersection_obs ] = obs_common_section( obs, x_obs_sf )
+function [ obs, intersection_obs ] = obs_common_section( obs, x_obs_sf )
 %OBS_COMMON_SECTION finds common section of two ore more obstacles 
 % at the moment only solution in two d is implemented
 
@@ -95,6 +95,9 @@ intersection_sf = unique(intersection_sf','rows')';
 
 % Get numerical mean
 x_center_dyn= mean(intersection_sf,2);
+for it_obs = intersection_obs
+    obs{it_obs}.x_center_dyn = x_center_dyn;
+end
 
 % sort points according to angle
 intersec_sf_cent = intersection_sf - repmat(x_center_dyn,1,size(intersection_sf,2));

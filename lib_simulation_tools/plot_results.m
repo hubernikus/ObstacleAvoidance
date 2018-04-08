@@ -30,7 +30,7 @@ switch mode
             if b_obs
                 [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,40);
                 for n=1:size(x_obs,3)
-                    sp.obs(n) = patch(x_obs(1,:,n),x_obs(2,:,n),0.0*ones(1,size(x_obs,2)),[0.6 1 0.6]);
+                    sp.obs(n) = patch(x_obs(1,:,n),x_obs(2,:,n),0.0*ones(1,size(x_obs,2)),[0.6 1 0.6], 'FaceAlpha', 0.7);
                     sp.obs_sf(n) = plot(x_obs_sf(1,:,n),x_obs_sf(2,:,n),'k--','linewidth',0.5);
                     
                     if isfield(obs{n}, 'x_center_dyn')

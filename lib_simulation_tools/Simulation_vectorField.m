@@ -136,7 +136,8 @@ for it_time = 1:length(timeSteps)
                 xd_converge(:,ix,iy)  = [0;0];
             else
                 xd_noColl(:,ix,iy) = xd_bar(:,ix,iy);
-                [xd_converge(:,ix,iy),~,compTime_ellips] = obs_modulation_convergence([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs,  xd_obs,w_obs);
+                %[xd_converge(:,ix,iy),~,compTime_ellips] = obs_modulation_convergence([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs,  xd_obs,w_obs);
+                [xd_converge(:,ix,iy),~,compTime_ellips] = obs_modulation_elastic([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs, ds_handle, xd_obs, w_obs, attractor);
             end
         end
     end
@@ -185,8 +186,8 @@ for it_time = 1:length(timeSteps)
     tic 
     % Modified System
     figure(figs{1});
-    %streamslice(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
-    quiver(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
+    streamslice(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
+    %quiver(X(:,:), Y(:,:), squeeze(xd_converge(1,:,:)), squeeze(xd_converge(2,:,:)), 'b')
     
     %streamslice(X_noCollision(:,:), Y_noCollision(:,:), squeeze(xd_ellips(1,:,:)), squeeze(xd_ellips(2,:,:)), 'b')
 
@@ -212,7 +213,7 @@ for it_time = 1:length(timeSteps)
         figure(figs{ii});
         for it_obs = 1:size(x_obs_boundary,3)
             %patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),0.*ones(1,size(x_obs_boundary,2)),[0.6 1 0.6]); hold on;
-            patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[0.6 1 0.6], 'FaceAlpha',0.2); hold on;
+            patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[0.6 1 0.6], 'FaceAlpha',1); hold on;
             contours = plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k--','LineWidth',1.2); hold on;
             
             mainAxis = get(patchs, 'Parent'); % Get main axis

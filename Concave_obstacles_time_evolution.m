@@ -168,7 +168,7 @@ x_range = [-3,28]; y_range = [-14,14];
 
 fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
 opt_sim.figure = fig(1);
-opt_sim.simulationName = 'three_ellipse_intersection'
+opt_sim.simulationName = 'three_ellipse_intersection';
 opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
 
 %[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
@@ -201,7 +201,7 @@ obs{i}.a = [1.;9];
 obs{i}.p = [1;1];
 obs{i}.x0 = [12;18];
 %obs{i}.x0 = [12;6];
-obs{i}.sf = [1.1];
+obs{i}.sf = [1];
 obs{i}.th_r = -60*pi/180;
 obs{i}.x_center = [0.0;0];
 obs{i}.tailEffect = taileffect;

@@ -1,6 +1,9 @@
 function R = compute_R(d,th_r)
 % rotating the query point into the obstacle frame of reference
-    
+if ~ (th_r) % th_r == 0
+    return;
+end
+
 if d == 2 
     R = [cos(th_r(1)) -sin(th_r(1));sin(th_r(1)) cos(th_r(1))];
 elseif d == 3

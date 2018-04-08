@@ -6,6 +6,17 @@ function [] = divergence_analysis(ds_handle, fn_handle_objAvoidance, ...
 % Only implemented for 2D so far
 dim = 2;
 
+zoomOut = 0;
+zoomStr = '';
+if zoomOut
+    meanVal = mean(x_range);
+    x_range = meanVal + (x_range-meanVal)*zoomOut;
+    
+    meanVal = mean(y_range);
+    y_range = meanVal + (y_range-meanVal)*zoomOut;
+   
+   zoomStr = strcat('_zoomOut_',num2str(zoomOut));
+end
 
 % Satrt <<Initilaization>>
 if isfield(options, 'attractor') % if no attractor -> 'None'
@@ -190,12 +201,12 @@ set(groot,'DefaultAxesFontSize',12)
 set(groot,'DefaultLineLineWidth',0.8)
 xlabel('$\xi_1$','interpreter','latex')
 ylabel('$\xi_2$','interpreter','latex')
-set(gca,'xtick',[],'ytick',[]); box on;
+%set(gca,'xtick',[],'ytick',[]); box on;
 axis equal;
 xlim(x_range); ylim(y_range);
 
 if saveFig
     print(strcat('fig_vector/divergenceAnalysis_',simulationName, ...
-                 'colorMean',colorString,'.eps'),'-depsc')
+                 '_colorMean',colorString,zoomStr,'.eps'),'-depsc')
 end
 end
