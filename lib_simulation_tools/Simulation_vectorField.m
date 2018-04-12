@@ -120,7 +120,7 @@ for it_time = 1:length(timeSteps)
     [x_obs_boundary, x_obs_sf] = obs_draw_ellipsoid(obs,50);
     
     % Find intersection of obstacles
-    [intersection_sf, x_center_dyn, intersection_obs]  = obs_common_section(obs, x_obs_sf);
+    [obs, intersection_obs]  = obs_common_section(obs, x_obs_sf);
     for it_obs = intersection_obs
         %fprintf('not setting center \n')
         obs{it_obs}.x_center_dyn = x_center_dyn;

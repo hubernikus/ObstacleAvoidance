@@ -90,7 +90,7 @@ opt_sim.saveFig = true;
 N_x = 25;  N_y = N_x;
 x_range = [-3,3]; y_range = [-3,3];
 
-fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+fig(1) = figure('name','fluidDynamics_model_movingObj','Position',[400 0 500 500]);
 opt_sim.figure = fig(1);
 opt_sim.simulationName = 'three_ellipse_intersection'
 opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
@@ -99,6 +99,8 @@ opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
 Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
 
 %% Concave Obstacles
+close all
+
 opt_sim.dt = 0.003; %integration time steps
 opt_sim.i_max = 800; %maximum number of iterations
 
@@ -122,6 +124,7 @@ x0 = [ones(1,N)*26 ; linspace(-15,20,N)];
 
 % Place obstacles
 obs = [];
+
 
 %obstacle 1
 i=1;
@@ -169,6 +172,7 @@ x_range = [-3,28]; y_range = [-14,14];
 fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
 opt_sim.figure = fig(1);
 opt_sim.simulationName = 'three_ellipse_intersection';
+
 opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
 
 %[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);

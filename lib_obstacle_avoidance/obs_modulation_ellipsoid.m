@@ -207,7 +207,7 @@ xd = xd + xd_obs; %transforming back the velocity into the global coordinate sys
 
 compTime = toc;
 
-function [E Gamma] = compute_basis_matrix(d,x_t,obs)
+function [E, Gamma] = compute_basis_matrix(d,x_t,obs)
 % For an arbitrary shap, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')

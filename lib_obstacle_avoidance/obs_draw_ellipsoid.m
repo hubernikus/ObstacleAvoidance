@@ -102,7 +102,7 @@ np = prod(ns);
 N = length(obs); %number of obstacles
 x_obs = zeros(d,np,N);
 
-if nargout > 1;
+if nargout > 1
     x_obs_sf = zeros(d,np,N);
 end
     

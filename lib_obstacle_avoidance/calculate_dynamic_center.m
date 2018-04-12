@@ -2,11 +2,11 @@ function [ obs ] = calculate_dynamic_center( obs, x_obs_sf, intersection_obs )
 % Calculate the dynamic center for the applicaiton of the modulation
 % matrix. A smooth transition is desired between objects far away (center
 % in middle) and to convex obstacles intersecting. 
-
+%
 % This might not always be the completely optimal position of the
 % dynamic_center of the obstacles, but it results in a continous movement
 % of it and keeps computational cost low
-
+%
 % TODO --- 
 % Increase sampling, when less thant 1/9 of original points are still 
 % available; decrease inital number of sampling points to 27 initially
@@ -28,10 +28,16 @@ intersection_obs = unique(intersection_obs);
 
 N_obs = size(obs,2);
 
+% Resolution of outside plot
+% MAYBE - Change to user fixed size -- replot first one
+[~, x_obs_sf] = obs_draw_ellipsoid(obs,16); % Resolution # 16
+N_resol = size(x_obs_sf,2); 
+
 % Center normalized vector to surface points
-x_obs_norm = zeros(dim,size(x_obs_sf,2),N_obs);
+x_obs_norm = zeros(dim,size(x_obs_sf,2),N_obs); % TODO - init the right size
 x_obs_rad = zeros(size(x_obs_sf,2),N_obs);
 rotMatrices = zeros(dim,dim,N_obs);
+
 for ii = 1:N_obs
     x_obs_sf(:,:,ii) = x_obs_sf(:,:,ii)-obs{ii}.x0;
     x_obs_rad(:,ii) = sqrt(sum(x_obs_sf(:,:,ii).^2,1));
@@ -41,17 +47,18 @@ end
 
 % Calculate distance between obstacles
 weight_obs_temp = zeros(N_obs,N_obs);
+
 %x_middle = zeros(dim, N_obs, N_obs);
 x_cenDyn_temp = zeros(dim, N_obs, N_obs);
 
-% axis equal;
-% %close all;
-% figure;
-% x_obs = drawEllipse_bound(obs{1}.a,obs{1}.th_r,obs{1}.p);
-% plot(x_obs(1,:), x_obs(2,:), 'k'); 
-% hold on; axis equal;
-% x_obs = drawEllipse_bound(obs{2}.a,obs{2}.th_r,obs{2}.p,obs{2}.x0-obs{1}.x0);
-% plot(x_obs(1,:), x_obs(2,:), 'k'); 
+axis equal;
+%close all;
+figure(12)%, 'Position', [300,600,400,400]);
+x_obs = drawEllipse_bound(obs{1});
+plot(x_obs(1,:), x_obs(2,:), 'k'); 
+hold on; axis equal;
+x_obs = drawEllipse_bound(obs{2});
+plot(x_obs(1,:), x_obs(2,:), 'k'); 
 
 % Reference Distance
 % TODO: only obstacles which are not intersection_obs
@@ -86,64 +93,135 @@ for ii = 1:N_obs
         N_gamma = 3;
         dist_step = (ref_dist)/(N_gamma);
         dist_0 = 0;
-
+        
+        resolution = size(x_obs_sf,2)-1; % usually first point is double..
+        %N_resol = 27; % 2^3
+        resol_max = 3^7;
+        
         % Default value greater than 2 to enter loop
-        n_intersection=3;
+        intersection_min = 2;
+        n_intersection=intersection_min+1;
+        intersection_ind = true(size(x_obs_norm,2),1);
+        
+%         if sum(abs(x_obs_temp(:,end) - x_obs_temp(:,1)))==0
+%             % TODO - remove if statement -- only at beginning
+%             x_obs_temp(:,end) =[]; % Remove repetition
+%         end
+        
+        % Draw new obstacle
+        obs_temp = obs{jj};
+        obs_temp.a = obs_temp.a + dist_step+dist_0;
+        obs_temp.x0 = obs_temp.x0 - obs{ii}.x0;
+        x_obs_temp = drawEllipse_bound(obs_temp);
 
-        % Iteration counter
-        itCount = 0;
-        itMax = 100;
+        itCount = 0; % Iteration counter
+        itMax = 100; % Maximum number of iterations
         
         % Tries to find the distance to ellipse
-        while(n_intersection>2)  % Continious while not a sharp intersection
+        while(n_intersection>intersection_min)  % Continious while not a sharp intersection
             it_gamma0 = 1; % Iteration starting value
             for it_gamma = it_gamma0:N_gamma
-                delta_d = dist_step*it_gamma+dist_0;
+                delta_d = dist_step*it_gamma+dist_0
 
                 % Search the intersection nummerically
-                x_obs_temp = obs{jj}.x0 - obs{ii}.x0 + x_obs_norm(:,:,jj).* ...
-                             (repmat(x_obs_rad(:,jj)'+ delta_d, dim, 1) );
-                Gamma = sum( ( 1/obs{ii}.sf*rotMat'*(x_obs_temp )./ ...
-                        repmat( (obs{ii}.a+delta_d) , 1, length(ind)) ).^(2*obs{ii}.p), 1);
-                n_intersection = sum(Gamma<1);
+                %x_obs_temp = obs{jj}.x0 - obs{ii}.x0 + x_obs_norm(:,intersection_ind,jj).* ...
+                %                (repmat(x_obs_rad(intersection_ind,jj)' + delta_d, dim,1) );
+                
+                %x_obs_temp = obs{jj}.x0 + x_obs_norm(:,intersection_ind,jj).* ...
+                %                 (repmat(x_obs_rad(intersection_ind,jj)' + delta_d, dim,1) );
+                             
+%                 x_obs_temp = obs{jj}.x0 + x_obs_norm(:,intersection_ind,jj)*5;                                 (repmat(x_obs_rad(intersection_ind,jj)' + delta_d, dim,1) );
 
-%                 x_obs = drawEllipse_bound(obs{1}.a+delta_d,obs{1}.th_r,obs{1}.p);
-%                     plot(x_obs(1,:), x_obs(2,:), '--'); 
-%                     
-%                     plot(x_obs_temp(1,:), x_obs_temp(2,:), '--'); 
+                %x_obs_temp = x_obs_sf(:,:,jj) + obs{ii}.x0;
+                
+                for kk = 1:size(x_obs_temp,2) % can loop be removed? one-liner -- remove rotation matrix
+%                     Gamma(ii) = sum( ( 1/obs{ii}.sf*rotMat'*(x_obs_temp(:,ii) )./ ...
+%                         repmat( (obs{ii}.a+delta_d) , 1, length(ind)) ).^(2*obs{ii}.p), 1);
+                    Gamma(kk) = sum( ( 1/obs{ii}.sf*rotMat'*(x_obs_temp(:,kk) )./ ...
+                         (obs{ii}.a+delta_d)).^(2*obs{ii}.p), 1);
+                end
+                intersection_ind_temp = Gamma<1;
+                n_intersection = sum(intersection_ind_temp) %, x_range, N_resol);
+
+                % Remove
+                obs_temp = obs{ii};
+                obs_temp.a = obs_temp.a + delta_d;
+                obs_temp.x0 = [0;0];
+                x_obs = drawEllipse_bound(obs_temp);
+                plot(x_obs(1,:), x_obs(2,:), 'g.-'); hold on;
+                    
+                plot(x_obs_temp(1,:), x_obs_temp(2,:), 'r.-'); 
 
                 % Increment iteratoin counter
-                itCount = itCount + 1;
+                itCount = itCount + 1
 
-                % Intersection found
-                if n_intersection
+                
+                if n_intersection  % Intersection found
                     dist_0 = dist_0 + (it_gamma-1)*dist_step;
                     dist_step = dist_step/(N_gamma);
                     
-                    if n_intersection < 5
-                        % Increse resolution of obstacle
-                        intersection_ind = Gamma<1;
-                        if n_intersction == 1
-                            drawEllipse_bound(obs, 
-                                x_obs_temp(:,intersection_ind-1),x_obs_temp(intersection_ind+1) );
-                        else
-                            drawEllipse_bound(a,theta,p,x0, N_resol, dim, x_start, x_end)
-                            [(n_intersection_ind(1), n_intersection_ind(end)], );
+                        if n_intersection == 1
+                            % Increse resolution of obstacle
+
+
+                            indLow = find(intersection_ind_temp,1)-1;
+                            if indLow == 0;  indLow = size(x_obs_temp,2); end
+                            indHigh = find(intersection_ind_temp,1,'last')+1;
+                            if indHigh > size(x_obs_temp,2); indHigh = 1;  end
+
+                            xRange = [x_obs_temp(:,indLow),x_obs_temp(:,indHigh)]-obs{ii}.x0;
+                            % [x_obs_temp, x_obs_rad(:,jj), x_obs_norm(:,jj)] = drawEllipse_bound(obs{jj}, xRange, N_resol);
+                            [x_obs_temp] = drawEllipse_bound(obs{jj}, xRange, N_resol);
+                        elseif n_intersection < length(intersection_ind_temp)
+                            % all intersection in middle -  [ 0 0 1 1 1 0 ] 
+                            % extrema 1 - [ 0 0 0 1 1 1 ]
+                            % extrema 2 - [ 1 1 1 0 0 0 ]
+                            indLow = x_obs_temp(:,find(intersection_ind_temp,1, 'first') );
+                            indHigh = x_obs_temp(:,find(intersection_ind_temp,1,'last') ) ;
+                            
+                            if ~ or(indHigh < length(intersection_ind_temp), indLow > 1)
+                                % split at border - [ 1 1 0 0 0 1 ]
+                                indHigh = x_obs_temp(:,find(~intersection_ind_temp,1, 'first') ) - 1;
+                                if indHigh == 0;  indHigh = size(x_obs_temp,2); end
+                                
+                                indLow = x_obs_temp(:,find(~intersection_ind_temp,1,'last') ) + 1;
+                                if indLow > size(x_obs_temp,2); indLow = 1;  end
+                            end
+                            xRange = [indLow, indHigh];
+                            [x_obs_temp] = drawEllipse_bound(obs{jj}, xRange, N_resol);
                         end
-                        break;
-                    end
+
+                        % Resolution of the surface mapping - 2D
+                        resolution = resolution/(n_intersection-1)*N_resol;
+
+%                              %Reset intersection paramters
+%                             n_intersection = intersection_min+1; % 
+%                             intersection_ind = ones(size(intersection_ind));
+%                             break;
+%                         else 
+%                             TODO more compact - transfer which index of
+%                             intersection is kept 
+%                             intersection_ind_new = (1:size(intersection_ind,1))';
+%                             intersection_ind_new = intersection_ind_new(intersection_ind);
+%                             intersection_ind = zeros(size(intersection_ind));
+%                             intersection_ind(intersection_ind_new(intersection_ind_temp)) = 1;
+%                         end
+%                      end
                     
                     if it_gamma == 0
                         % The increasing resolution caused new points,
                         % lower value of dist_0 is not bounding anymore
                         dist_0 = dist_0 - dist_step;
                         dist_step = dist_step + dist_step/N_gamma; %
-                        n_intersection = 3;
+                        
+                        n_intersection = intersection_min+1; % 
                     end
                     
-                    break;
+                    %break;
                 end
-
+                if resolution > resol_max 
+                    break; % Numerical resolution of boundary is high enough
+                end
             end
             
             
@@ -160,6 +238,8 @@ for ii = 1:N_obs
                 warning('No close intersection found ...\n');
                 break; % Emergency exiting -- in case of slow convergence
             end
+            
+
         end
 
         % Negative step
@@ -226,6 +306,7 @@ end
 
 end
 
+
 % function ang = angleSum(ang1, ang2)
 % ang = ang1+ang2;
 % if(ang>pi)
@@ -239,44 +320,53 @@ end
 % 
 % end
 
-function x_obs = drawEllipse_bound(obs, x_bound, N_resol,  x0)
+function [x_obs, x_obs_rad, x_obs_norm] = drawEllipse_bound(obs, x_bound, N_resol,  x0)
 a = obs.a;
-theta = obs.theta;
+th_r = obs.th_r;
 p = obs.p;
 
-if nargin<3; N_resol = 27; end % 2^3
+if nargin<3; N_resol = 16; end % 2^3
 if nargin<4; x0 = obs.x0; end
 
 dim = size(x0,1); % Dimension
 
-R = compute_R(dim, theta);
+R = compute_R(dim, th_r);
 
 if nargin<2
-    dTheta = 2*pi/(N_resol);
-    x_start = [1;0];
-    x_end = [cos(dTehta); -sin(dTheta)];
-    
     theta_min = 0;
+    dTheta = 2*pi/N_resol;
 else
-    x_start = R'*x_bound(:,1);
-    x_end = R'*x_bound(:,2);
+    x_start = R'*x_bound(:,1)-x0;
+    x_end = R'*x_bound(:,2)-x0;
     theta_min = atan2(x_start(2),x_start(1));
     theta_max= atan2(x_end(2),x_end(1));
 
     % increase if to low
-    theta_max = (theta_max<theta_min)*theta_max+2*pi;
+    theta_max = (theta_max<theta_min)*2*pi + theta_max;
     
     dTheta = (theta_max-theta_min)/(N_resol-1);
 end
 
+theta_list = []; % TODO -- delete this temporary list (only debugging)
+
 x_obs = zeros(dim, N_resol);
 for it_x = 1:N_resol
+    
     theta = it_x*dTheta+theta_min;
     theta = theta-(theta>pi)*2*pi; % Range of [-pi, pi]
+    theta_list = [theta_list, round(theta*180/pi)];
     
     x_obs(1,it_x) = a(1,:).*cos(theta);
     x_obs(2,it_x) = a(2,:).*sign(theta).*(1 - cos(theta).^(2.*p(1,:))).^(1./(2.*p(2,:)));
     x_obs(:,it_x) = R*x_obs(:,it_x);
 end
 x_obs = x_obs+x0;
+
+theta_list
+
+% Caclulate cylindric representation -- TODO - DELETE
+x_obs_sf = x_obs - x0;
+x_obs_rad= sqrt(sum(x_obs_sf.^2,1));
+x_obs_norm = x_obs_sf./repmat(x_obs_rad,dim,1);
+
 end

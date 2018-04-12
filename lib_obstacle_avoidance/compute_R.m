@@ -1,6 +1,8 @@
 function R = compute_R(d,th_r)
 % rotating the query point into the obstacle frame of reference
-if ~ (th_r) % th_r == 0
+
+if ~(th_r) % th_r == 0
+    R = eye(d);
     return;
 end
 
