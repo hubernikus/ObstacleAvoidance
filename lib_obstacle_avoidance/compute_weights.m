@@ -7,8 +7,7 @@ if nargin < 3
     distMeas_min = 1;
 end
 if nargin < 4
-    % Type of operation later on
-    weightType = 'inverseGamma';
+    weightType = 'inverseGamma'; % Weighting based on what function
 end
 
 distMeas = max(0, distMeas-distMeas_min);
@@ -28,22 +27,24 @@ switch weightType
         else
             w = 1./distMeas;
         end
-        % Normalization
-        w = w/sum(w);
+        w = w/sum(w); % Normalization
+        
     case 'khansari'
        for i=1:N
             ind = 1:N;
             ind(i) = [];
             w(i) = prod(distMeas(ind)./(distMeas(i)+distMeas(ind)));
        end 
-       if (round(sum(w),4) ~= 1)
-           fprintf('Seeee it was normalized yet... with sum(w)=%2.3f\n', sum(w))
-       end
+          
+   case 'khansari_normalized'
+       for i=1:N
+            ind = 1:N;
+            ind(i) = [];
+            w(i) = prod(distMeas(ind)./(distMeas(i)+distMeas(ind)));
+       end 
        % Add normalization -- not in original
        w = w/sum(w);
 
     otherwise
         warning("Unkown weighting method.");
-
-
 end

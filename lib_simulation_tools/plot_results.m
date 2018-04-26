@@ -43,7 +43,7 @@ switch mode
                         sinAng = sin(obs{n}.th_r);
                         R = [cosAng, -sinAng; sinAng, cosAng];
                         pos = obs{n}.x0 + R*(obs{n}.a.*obs{n}.x_center);
-                        sp.x_center(n) = plot(pos(1),pos(2),'k+','LineWidth',2);
+                        sp.x_center(n) = plot(pos(1),pos(2),'ko','LineWidth',2);
                     end
                 end
             end

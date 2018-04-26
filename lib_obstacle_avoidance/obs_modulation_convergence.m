@@ -124,13 +124,16 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
-    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n},R(:,:,n));
+    [E(:,:,n), Gamma(n)] = compute_basis_matrix(d,x_t,obs{n},R(:,:,n));
 %     if Gamma(n)<0.99
 %         disp(Gamma(n))
 %     end
 end
 
+
+% fprintf('Before angle. \n')
 w = compute_weights(Gamma,N);
+% fprintf('After angle. \n \n \n')
 
 %adding the influence of the rotational and cartesian velocity of the
 %obstacle to the velocity of the robot
@@ -186,7 +189,7 @@ xd = xd + xd_obs; %transforming back the velocity into the global coordinate sys
 
 compTime = toc;
 
-function [E Gamma] = compute_basis_matrix(d,x_t,obs, R)
+function [E, Gamma] = compute_basis_matrix(d,x_t,obs, R)
 % For an arbitrary shap, the next two lines are used to find the shape segment
 th = atan2(x_t(2),x_t(1));
 if isfield(obs,'partition')
@@ -227,7 +230,7 @@ if d == 3
 end
 
 
-% function w = compute_weights(Gamma,N)
+% function z compute_weights(Gamma,N)
 % w = zeros(1,N);
 % Gamma(Gamma<1) = 1;
 % Gamma = Gamma-1;

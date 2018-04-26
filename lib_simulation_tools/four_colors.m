@@ -1,4 +1,4 @@
-function c = four_colors(m2)
+function c = four_colors(m2, cols_pos, cols_neg,  col_mean)
 %REDBLUE    Shades of red and blue color map
 %   REDBLUE(M), is an M-by-3 matrix that defines a colormap.
 %   The colors begin with bright blue, range through shades of
@@ -15,28 +15,31 @@ function c = four_colors(m2)
 
 m2 = max([2, m2]);
 
-green = [0,1,0];
-blue = [0,0,1];
-white = [1 1 1];
-%orange = [255,140,0]/255;
-orange = [255,215,0]/255;
-red = [1 0 0];
+if nargin<2
+    cols_neg(1,:) = [0,0,1]; % Blue
+    cols_neg(2,:) = [0,1,0]; % Green
 
-c = zeros(m2+1,3);
+    cols_pos(1,:) = [255,215,0]/255; % orange
+    cols_pos(2,:) = [1 0 0]; % red
+end
+if nargin<4
+    col_mean = [1 1 1]; % White
+end
+
+c = zeros(2*m2+1,3);
 
 % Green - Blue strip
-dCol = (green-blue)/(m2-1);
+dCol = (cols_neg(2,:)-cols_neg(1,:) )/(m2-1);
 for ii = 1:m2
-    c(ii,:) = blue+dCol*(ii-1);
+    c(ii,:) = cols_neg(1,:)+dCol*(ii-1);
 end
 
 % White middle
-c(m2+1,:) = white;
+c(m2+1,:) = col_mean;
 
 % orange to red
-dCol = (red-orange)/(m2-1);
-
+dCol = (cols_pos(2,:)-cols_pos(1,:) )/(m2-1);
 for ii = 1:m2
-    c(ii+m2+1,:) = orange+dCol*(ii-1);    
+    c(ii+m2+1,:) = cols_pos(1,:) +dCol*(ii-1);    
 end
 

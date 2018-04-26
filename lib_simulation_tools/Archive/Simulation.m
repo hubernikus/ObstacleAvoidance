@@ -98,7 +98,7 @@ if figSave
     
     % Initialization of avi video object
     nFrames = 20;
-    vidObj = VideoWriter(strcat('animations/', figName, '.avi'));
+ vidObj = VideoWriter(strcat('animations/', figName, '.avi'));
     vidObj.Quality = 100;
     vidObj.FrameRate = 20;
     open(vidObj);

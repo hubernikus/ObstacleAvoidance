@@ -1,4 +1,4 @@
-function [ div, u, v,Gamma,t1,t2] = divergence_velocityField(x, obs )
+ gfunction [ div, u, v,Gamma,t1,t2] = divergence_velocityField(x, obs )
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 

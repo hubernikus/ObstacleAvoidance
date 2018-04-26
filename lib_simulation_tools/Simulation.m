@@ -124,6 +124,22 @@ else
     end
 end
 
+if ~isfield(options,'saveAnimation')
+    options.saveAnimation = false; % Default value
+end
+
+if options.saveAnimation
+    figName = get(gcf,'Name');
+    
+    % Initialization of avi video object
+    vidObj = VideoWriter(strcat('animations/', figName, '.avi')); % TODO
+    
+    %-- mp4 not working..
+%     vidObj = VideoWriter(strcat('animations/', figName, '.mp4'), 'FileFormat','mp4');
+    vidObj.Quality = 100;
+    vidObj.FrameRate = 20;
+    open(vidObj);
+end
 %% setting initial values
 nbSPoint=size(x0,2); %number of starting points. This enables to simulatneously run several trajectories
 
@@ -189,13 +205,17 @@ if options.plot %plotting options
     end
 end
 
-if isfield(options,'attractor')
+if isfield(options, 'attractor') % if no attractor -> 'None'
     attractor = options.attractor;
 else
-    attractor = [];
+    attractor = [0;0];
 end
 
-
+if isfield(options, 'DS_type') % if no attractor -> 'None'
+    ds_type = options.ds_type;
+else
+    ds_type = 'linear';
+end
 
 %% Simulation
 iSim=1;
@@ -221,23 +241,17 @@ while true
         
         w_obs = zeros( 1, length(obs) );
         xd_obs = zeros( d, length(obs) );
-        
-        if length(obs)>1
-            % Check wheter there is an overlapping of obstacles
-            [obs, intersection_obs]  = obs_common_section(obs, x_obs_sf);
-            
-            obs = calculate_dynamic_center(obs, x_obs_sf, intersection_obs);
-            plot_results('c',sp,x,xT,n, obs);
-        end
-        
+
+        timeVariant_simu = false;
         % applying perturbation on the obstacles
         for n=1:length(obs)
-
             % Initialize Obstacles
             w_obs(n) = 0;
             xd_obs(:,n) = [0;0];
             
+            
             if isfield(obs{n},'perturbation')
+                timeVariant_simu = true;
                 if iSim >= round(obs{n}.perturbation.t0/options.dt)+1 && iSim <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
                     x_obs{n}(:,end+1) = x_obs{n}(:,end) + obs{n}.perturbation.dx*options.dt;
                     obs{n}.x0 = x_obs{n}(:,end);
@@ -246,19 +260,46 @@ while true
                     if isfield(obs{n}.perturbation,'w') % Check rotational rate
                         w_obs(n) = obs{n}.perturbation.w;
                     end
-                    
-                    if options.plot %plotting options
-                        plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt, obs);
-                    end
+  
+                    % Redrawing done with dynamic center
+%                     if options.plot %plotting options
+%                        plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt, obs);  
+%                     end
                 else
                     x_obs{n}(:,end+1) = x_obs{n}(:,end);
                 end
+            else
             end
         end
-
+        
+        if and(or(timeVariant_simu, iSim == 1), length(obs)>1)  % Caclulate dynamic center
+            % Check wheter there is an overlapping of obstacles
+            [obs, intersection_obs]  = obs_common_section(obs, x_obs_sf);
+            obs = calculate_dynamic_center(obs, x_obs_sf, intersection_obs);
+            % TODO -- For long simulation and far away obsacle, dynamic
+            % center suddendly stops to update. Find bug. Probs in
+            % Simulation file
+            if options.plot
+                for n = 1:length(obs)
+                    plot_results('c',sp,x,xT,n, obs); % Plot new center
+                end
+            end
+        elseif length(obs) == 1
+            obs{1}.x_center_dyn = obs{1}.x0;
+            plot_results('c',sp,x,xT,n, obs); % Plot new center
+        end
+        
+        % TODO -- Redrawing still seems to have a delay of obstacle center,
+        % how change this!?
+        for n = 1:length(obs)
+            if isfield(obs{n},'perturbation') % Only redraw moving obstacle
+            plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt, obs);
+            end
+        end
+        
         for j=1:nbSPoint
             %[xd(:,iSim,j), b_contour(j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
-            [xd(:,iSim,j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,xd_obs, w_obs, attractor);
+            [xd(:,iSim,j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs, xd_obs, w_obs, attractor, ds_type);
         end
         
         for n=1:length(obs) % integration of object (linear motion!) -- first order.. 
@@ -277,6 +318,7 @@ while true
         x(:,iSim+1,:)=x(:,iSim,:)+xd(:,iSim,:)*options.dt;
     end
     t(iSim+1)=t(iSim)+options.dt;
+    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Applying perturbation if any
@@ -334,6 +376,16 @@ while true
         end
     end
     
+    if options.saveAnimation
+        if isfield(options,'x_range')
+            xlim(options.x_range)
+        end
+        if isfield(options,'y_range')
+            ylim(options.y_range)
+        end
+        writeVideo(vidObj, getframe(gca));
+    end
+    
     %Checking the convergence
     if all(all(all(abs(xd_3last)<options.tol))) || iSim>options.i_max-2
         if options.plot
@@ -358,6 +410,10 @@ while true
             fprintf('Simulation stopped since it reaches the maximum number of allowed iterations i_max = %1.0f\n',iSim)
             fprintf('Exiting without convergence!!! Increase the parameter ''options.i_max'' to handle this error.\n')
         end
+        if options.saveAnimation
+            close(vidObj);
+        end
+        
         break
     end
     iSim=iSim+1;

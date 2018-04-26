@@ -25,9 +25,12 @@ end
 opt_sim.obstacle = []; %no obstacle is defined
 
 
+% fn_handle_objAvoidance = @(x,xd,obs, varargin) ...
+%                           obs_modulation_convergence(x,xd,obs,varargin);
+
 fn_handle_objAvoidance = @(x,xd,obs, varargin) ...
-                          obs_modulation_convergence(x,xd,obs,ds_handle, varargin);
-                      
+                          obs_modulation_convergence_attractor(x,xd,obs,ds_handle, varargin);
+
 N_points = 200;
 
 %opt_sim.color_map = redblue(200);
@@ -234,6 +237,64 @@ divergence_analysis(ds_handle, fn_handle_objAvoidance, ...
                                   opt_sim)
 
 timeEnd = toc; fprintf('\nEnd 2D-Simulation in %3.4f seconds. \n', timeEnd);
+
+
+
+%%
+close all
+for ii=1:7 %1:3
+    
+    figure;
+    switch ii
+        case 1
+            imagesc(xValues, yValues, denominator); hold on; % Create plot
+            caxis(2*[-1,1]) % set axis range
+        case 2 
+            imagesc(xValues, yValues, determinantNominator); hold on; % Create plot
+            caxis(2*[-1,1]) % set axis range
+        case 3
+            imagesc(xValues, yValues, traceNominator); hold on; % Create plot
+            caxis(2*[-1,1]) % set axis range
+        case 4
+            imagesc(xValues, yValues, trace); hold on; % Create plot
+            caxis(2*[-1,1]) % set axis range
+        case 5 
+            imagesc(xValues, yValues, determinant); hold on; % Create plot
+            caxis(2*[-1,1]) % set axis range
+        case 6
+            imagesc(xValues, yValues, squeeze(eigValues(1,:,:)) ); hold on; % Create plot
+            caxis(2*[-1,1]) % set axis range
+        case 7
+            imagesc(xValues, yValues, squeeze( eigValues(2,:,:)) ); hold on; % Create plot
+            caxis(2*[-1,1]) % set axis range
+    end
+    map_4cols = four_colors(N, green, red); % Create desired coloring
+    colormap(map_4cols);
+    colorbar; % show bar
+
+
+    [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,50);
+    for it_obs = 1:size(x_obs,3)
+        patch(x_obs(1,:,it_obs),x_obs(2,:,it_obs),[0.2 0.2 0.2],'FaceAlpha',0.8); hold on;
+        plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k-','LineWidth',3)
+    end
+    axis equal;
+    grid on;
+    xlim(x_range); ylim(y_range);
+
+%     if length(zerosTrace)
+%         plot(zerosTrace(1,:), zerosTrace(2,:), '*', 'Color',[0.7, 0,0]) % Red
+%     end
+%     if length(zerosDet)
+%         plot(zerosDet(1,:), zerosDet(2,:),'o', 'Color',[0, 0.7,0]) % Green
+%     end
+%     if length(poles)
+%         plot(poles(1,:), poles(2,:), 'x','Color',[0, 0, 0.7]) % Blue
+%     end
+end
+t_numericalZero = toc;
+
+%fprintf('Numerical evaluation took %d seconds. \n', t_numericalZero)
 
 %% Ellipse with good centering
 if false % Only for explanatory purpose, does not ned to be evaluated with others

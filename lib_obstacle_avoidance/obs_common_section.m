@@ -1,4 +1,4 @@
-function [ obs, intersection_obs ] = obs_common_section( obs, x_obs_sf )
+function [obs, intersection_obs ] = obs_common_section( obs, x_obs_sf )
 %OBS_COMMON_SECTION finds common section of two ore more obstacles 
 % at the moment only solution in two d is implemented
 
@@ -19,7 +19,7 @@ end
 d = 2;
 
 N_points = size(x_obs_sf,2);
-
+Gamma_steps = 15;
 
 % figure;
 % for ii = 1:size(x_obs_sf,3)
@@ -76,6 +76,30 @@ for it_obs1 = 1:size(x_obs_sf,3)
                 if size(intersection_sf)>0
                     intersectionExists = true;
                     intersection_obs = [it_obs1,it_obs2];
+                    
+                    % Create more intersection points
+                    obs_interior = [];
+                    obs_interior{1} = obs{it_obs1};
+                    
+                    % Increase resolution by sampling points within
+                    % obstacle, too
+                    for ii = 1:Gamma_steps-1
+                        N_points_interior = ceil(N_points/Gamma_steps*ii);
+                        obs_interior{it_obs1}.a = obs{it_obs1}.a/Gamma_steps*ii;
+                        
+                        [x_obs_sf_interior, ~] = obs_draw_ellipsoid(obs_interior, N_points_interior);
+                        
+                        Gamma = sum( ( 1/obs{it_obs2}.sf*R'*(x_obs_sf_interior(:,:,1)-repmat(obs{it_obs2}.x0,1,N_points_interior) )./repmat(obs{it_obs2}.a, 1, N_points_interior) ).^(2*obs{it_obs2}.p),1);
+    
+                        intersection_sf = [intersection_sf,x_obs_sf_interior(:,Gamma<1,1)];
+                    end
+                    % Check center piont too
+                    Gamma = sum( ( 1/obs{it_obs2}.sf*R'*(obs_interior{it_obs1}.x0-obs{it_obs2}.x0 )./obs{it_obs2}.a).^(2*obs{it_obs2}.p),1);
+                    
+                    if Gamma<1
+                        intersection_sf = [intersection_sf,obs_interior{it_obs1}.x0];
+                    end
+                    
                 end
             end
         end        
