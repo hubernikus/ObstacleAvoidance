@@ -228,7 +228,7 @@ disp(' ')
 disp('We further assess the behaviour in the presence of a angular ')
 disp('velcity. The geometry is the same as in the previous case, and the ')
 disp('angular velocity is 4. ')
-
+lib
 obs{1}.x0 = [-8;0];
 obs{1}.perturbation.w = 4;  
 obs{1}.perturbation.dx = [0;0];
