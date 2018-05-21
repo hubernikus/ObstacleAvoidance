@@ -1,16 +1,6 @@
 function [collision, X_noColl, Y_noColl] = obs_check_collision(obs_list, X, Y)
 % At the moment only implemented for 2D
-if nargin == 3
-    collision = zeros(size(X));
-else
-    collision = [0]; % ONLY for 2 objects
-    Y = X(2);
-    X = X(1);
-end
-
 d = 2; % Only immplemented for 2d at the moment
-
-if isempty(obs_list); return; end
 
 %[x_obs, x_obs_sf] = obs_draw_ellipsoid(obs_list,50);
 points = [X(:),Y(:)]';
@@ -18,42 +8,41 @@ N_points = size(points, 2);
 
 collision = zeros(1,N_points);
 
-for it_obs = 1: size(obs_list,2)
-    
+for it_obs = 1: size(obs_list,2) % Check collisions
     % \Gamma = \sum_{i=1}^d (xt_i/a_i)^(2p_i) = 1
     R = compute_R(d,obs_list{it_obs}.th_r);
-    Gamma = sum( ( 1/obs_list{it_obs}.sf*R'*(points-repmat(obs_list{it_obs}.x0,1,N_points) )...
-                   ./repmat(obs_list{it_obs}.a, 1, N_points) ).^(2*obs_list{it_obs}.p),1);
+    Gamma = sum( (R'*(points-repmat(obs_list{it_obs}.x0,1,N_points) )...
+                  ./repmat(obs_list{it_obs}.sf* obs_list{it_obs}.a, 1, N_points) ).^(2*obs_list{it_obs}.p),1);
     
     collision = collision | Gamma<1;
 end
+
 
 collision = reshape(collision, size(X));
 
 X_noColl = X.*not(collision);
 Y_noColl = Y.*not(collision);
 
-%figure;
-%plot(X_noColl(:),Y_noColl(:),'ko')
 end
 
-function R = compute_R(d,th_r)
-% rotating the query point into the obstacle frame of reference
-
-if d == 2 
-    R = [cos(th_r(1)) -sin(th_r(1));sin(th_r(1)) cos(th_r(1))];
-elseif d == 3
-    R_x = [ 1, 0, 0; 0, cos(th_r(1)), sin(th_r(1)); 0, -sin(th_r(1)), cos(th_r(1))];
-    R_y = [cos(th_r(2)), 0, -sin(th_r(2)); 0, 1, 0; sin(th_r(2)), 0, cos(th_r(2))];
-    R_z = [cos(th_r(3)), sin(th_r(3)), 0; -sin(th_r(3)), cos(th_r(3)), 0; 0, 0, 1];
-    R = R_x*R_y*R_z;
-else %rotation is not yet supported for d > 3
-    R = eye(d);
-end
-
-
-
-end
+% 
+% function R = compute_R(d,th_r)
+% % rotating the query point into the obstacle frame of reference
+% 
+% if d == 2 
+%     R = [cos(th_r(1)) -sin(th_r(1));sin(th_r(1)) cos(th_r(1))];
+% elseif d == 3
+%     R_x = [ 1, 0, 0; 0, cos(th_r(1)), sin(th_r(1)); 0, -sin(th_r(1)), cos(th_r(1))];
+%     R_y = [cos(th_r(2)), 0, -sin(th_r(2)); 0, 1, 0; sin(th_r(2)), 0, cos(th_r(2))];
+%     R_z = [cos(th_r(3)), sin(th_r(3)), 0; -sin(th_r(3)), cos(th_r(3)), 0; 0, 0, 1];
+%     R = R_x*R_y*R_z;
+% else %rotation is not yet supported for d > 3
+%     R = eye(d);
+% end
+% 
+% 
+% 
+% end
 
 % for it_x = 1:size(X,1)
 %     for it_y = 1:size(X,2)

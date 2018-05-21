@@ -1,4 +1,4 @@
-function [x_obs x_obs_sf] = obs_draw_ellipsoid(obs,ns)
+function [x_obs, x_obs_sf] = obs_draw_ellipsoid(obs,ns)
 %
 % Obstacle avoidance module: Version 1.1, issued on March 26, 2012
 %

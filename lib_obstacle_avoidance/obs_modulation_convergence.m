@@ -21,7 +21,7 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 %
 % The function is called using:
 %       [xd M] = obs_modulation_ellipsoid(x,xd,obs,xd_obs)
-%
+% 
 %
 % Inputs -----------------------------------------------------------------
 %
@@ -37,7 +37,7 @@ function [xd, M, compTime] = obs_modulation_convergence(x,xd,obs,varargin)
 %                following properties: 
 %           - .a:    The ellipsoid length scale (e.g. [1;1] for a 2D circle.
 %           - .p:    The ellipsoid power terms (e.g. [1;1] for a 2D circle.
-%           - .x0:   The ellipsoid reference point (e.g. [0;0]).
+%           - .x0:   The ellipsoid reference po int (e.g. [0;0]).
 %           - .sf:   The safety factor (optional, default = 1).
 %           - .tailEffect (optional, default = true): If it is set to true,
 %                    the obstacle modifies the motion even when the it is
@@ -124,6 +124,8 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
+    
+
     [E(:,:,n), Gamma(n)] = compute_basis_matrix(d,x_t,obs{n},R(:,:,n));
 %     if Gamma(n)<0.99
 %         disp(Gamma(n))
@@ -174,13 +176,11 @@ for n = obs_order
             D(1) = -1.0;
         end
     end
-    
     M = (R(:,:,n)*E(:,:,n)*diag(D+[1;d0])/E(:,:,n)*R(:,:,n)')*M;
 end
 
-E(:,:,n) = R(:,:,n)*E(:,:,n); %transforming the basis vector into the global coordinate system
-
 xd = M*xd; %velocity modulation
+
 %     if norm(M*xd)>0.05
 %         xd = norm(xd)/norm(M*xd)*M*xd; %velocity modulation
 %     end
@@ -211,11 +211,8 @@ nv = (2*p./a.*(x_t./a).^(2*p - 1)); %normal vector of the tangential hyper-plane
 E = zeros(d,d);
 
 if isfield(obs, 'x_center_dyn') % automatic adaptation of center 
-    %R= compute_R(d, obs.th_r);
     E(:,1) = - (x_t - R'*(obs.x_center_dyn - obs.x0));
-    
-    %E(:,1) = - (x_t - (obs.x_center.*obs.a))
-    %fprintf('remove')
+
 elseif isfield(obs, 'x_center') % For relative center
     E(:,1) = - (x_t - (obs.x_center.*obs.a));
 else
@@ -229,6 +226,9 @@ if d == 3
     E(:,end+1) = [0;-nv(3);nv(2)];
 end
 
+if(sum(sum(isnan(E) ) ) )% TODO REMOVE CHECK
+    warning('Naaan element')
+end
 
 % function z compute_weights(Gamma,N)
 % w = zeros(1,N);

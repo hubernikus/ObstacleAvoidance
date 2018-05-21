@@ -226,7 +226,8 @@ for n = obs_order
     %M = (R(:,:,n)*E(:,:,n)*diag(D+[1;d0])/E(:,:,n)*R(:,:,n)')*M;
     %E_tild = R(:,:,n)*E_normal(:,:,n); -- TO OBSERVE -- why traped with
     %this
-    E_tild = R(:,:,n)*E_normal(:,:,n);
+%     E_tild = R(:,:,n)*E_normal(:,:,n);
+    E_tild = R(:,:,n)*E(:,:,n);
     E_tild_inv = pinv(E_tild);
 %     M = (R(:,:,n)*E(:,:,n)*diag(D+[1;d0])/E(:,:,n)*R(:,:,n)');
     M = (E_tild*diag(D+[1;d0])*E_tild_inv);
@@ -244,13 +245,14 @@ for n = obs_order
     % Decomponse relative velocity -- TODO only normal direction multipli
     % -- introduce hat_E = E*R ... --- faster calculation
     E_tild = R(:,:,n)*E_normal(:,:,n);
+    E_tild = R(:,:,n)*E(:,:,n);
     E_tild_inv = pinv(E_tild);
     xd_obs_normalFrame = E_tild_inv*xd_obs;
     
     % Only concider velocity in direction of the normal
     xd_obs_normalFrame(1)=min(xd_obs_normalFrame(1),0);
     xd_obs_normalFrame(2:end)=0;
-    xd_obs = E_tild*xd_obs_normalFrame;
+%     xd_obs = E_tild*xd_obs_normalFrame;
     
     xd = xd - xd_obs;
     xd = M*xd; %velocity modulation
@@ -312,9 +314,9 @@ E = zeros(d,d);
 if isfield(obs, 'x_center_dyn') % automatic adaptation of center 
     E(:,1) = - (x_t - R'*(obs.x_center_dyn - obs.x0));
 elseif isfield(obs, 'x_center') % For relative center
-    E(:,1) = - (x_t - (obs.x_center.*obs.a));
+    E(:,1) = (x_t - (obs.x_center.*obs.a));
 else
-    E(:,1) = - x_t;
+    E(:,1) = x_t;
 end
 
 E(1,2:d) = nv(2:d)';
@@ -431,4 +433,3 @@ end
 %     ind(i) = [];
 %     w(i) = prod(Gamma(ind)./(Gamma(i)+Gamma(ind)));
 % end
-

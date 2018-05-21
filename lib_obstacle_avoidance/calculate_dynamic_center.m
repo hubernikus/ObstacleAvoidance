@@ -24,20 +24,26 @@ if nargin<10
     marg_dynCenter = 1.3;
 end
 
-intersection_obs = unique(intersection_obs);
+intersection_obs_temp=[];
+for ii=1:length(intersection_obs)
+    intersection_obs_temp=[intersection_obs_temp,intersection_obs{ii}];
+end
+intersection_obs = unique(intersection_obs_temp);
 
 N_obs = size(obs,2);
+if ~N_obs; return; end % No obstacle not intersectin
 
 % Resolution of outside plot
-% MAYBE - Change to user fixed size -- replot first one
+% MAYBE - Change to user fixed size -- replot first oneh
 [~, x_obs_sf] = obs_draw_ellipsoid(obs,16); % Resolution # 16
-N_resol = size(x_obs_sf,2); 
+N_resol0 = size(x_obs_sf,2); 
+N_resol = N_resol0;
 
 % Number of incrementation steps
 N_distStep = 3;
 
 % Maximal surface resolution
-resol_max = 3^7;
+resol_max = 3^10;
 
 % Center normalized vector to surface points
 rotMatrices = zeros(dim,dim,N_obs);
@@ -53,9 +59,9 @@ weight_obs_temp = zeros(N_obs,N_obs);
 %x_middle = zeros(dim, N_obs, N_obs);
 x_cenDyn_temp = zeros(dim, N_obs, N_obs); 
 
-% axis equal;
-% %close all;
+% close all;
 % figure(12)%, 'Position', [300,600,400,400]);
+% clf;
 % x_obs = drawEllipse_bound(obs{1});
 % plot(x_obs(1,:), x_obs(2,:), 'k'); 
 % hold on; axis equal;
@@ -110,8 +116,12 @@ for ii = 1:N_obs % Center around this obstacle
                 [ind_intersec, n_intersec, x_obs_temp, a_range_old] ...
                         = check_for_intersection(obs{jj}, obs{ii}, delta_dist, N_resol, thetaRange, a_range_old, rotMat);
                 
+%                 plot(x_obs_temp(1,:), x_obs_temp(2,:), '--')
+%                 plot(x_obs_temp(1,ind_intersec), x_obs_temp(2,ind_intersec), 'ko')
                 % Increment iteratoin counter
                 itCount = itCount + 1;
+
+                
 
                 if n_intersec  % Intersection found
                     dist_start = (delta_dist-step_dist); % Reset start position
@@ -124,25 +134,34 @@ for ii = 1:N_obs % Center around this obstacle
                         % extrema 2 - [ 1 1 1 0 0 0 ]
                         indLow = find(ind_intersec,1, 'first');
                         indHigh = find(ind_intersec,1,'last');
+                        
+                        if resol > N_resol0 % only arc of convex obstacle is observed
+                            indLow = max(indLow -1,1); 
+                            indHigh= min(indHigh +1, N_resol);
+                        else
 
-                        if ~or(indHigh < length(ind_intersec), indLow > 1)
-                            % split at border - [ 1 1 0 0 0 1 ]
-                            indHigh = find(~ind_intersec,1, 'first') - 1;
-                            if indHigh == 0;  indHigh = N_resol; end
+                            if and(indHigh == length(ind_intersec), indLow == 1)
+                                % split at border - [ 1 1 0 0 0 1 ] -- only
+                                % relevant when analysing original convex
+                                % obstacle
+                                indHigh = find(~ind_intersec,1, 'first') - 1;
+%                                 if indHigh == 0;  indHigh = N_resol; end
 
-                            indLow = find(~ind_intersec,1,'last')  + 1;
-                            if indLow > N_resol; indLow = 1;  end
+                                indLow = find(~ind_intersec,1,'last')  + 1;
+%                                 if indLow > N_resol; indLow = 1;  end
+                            end
+
+                            % Increse resolution of obstacle
+                            n_intersec = n_intersec+2; % Add one point to left, one to the right
+
+                            %indLow = find(intersection_ind_temp,1)-1;
+                            indLow = indLow -1;
+                            if indLow == 0;  indLow = N_resol; end
+
+                            %indHigh = find(intersection_ind_temp,1,'last')+1;
+                            indHigh = indHigh + 1;
+                            if indHigh > N_resol; indHigh = 1;  end
                         end
-                        
-                        n_intersec = n_intersec+2; % Add one point to left, one to the right
-                        indLow = indLow -1; indHigh= indHigh +1;
-                        
-                        % Increse resolution of obstacle
-                        %indLow = find(intersection_ind_temp,1)-1;
-                        if indLow == 0;  indLow = N_resol; end
-
-                        %indHigh = find(intersection_ind_temp,1,'last')+1;
-                        if indHigh > N_resol; indHigh = 1;  end
                         
                         xRange =  [x_obs_temp(:,indLow),x_obs_temp(:,indHigh)];
                         % TODO - remove after debugging
@@ -154,31 +173,39 @@ for ii = 1:N_obs % Center around this obstacle
                     x_start = rotMatrices(:,:,jj)'*(xRange(:,1) - obs{jj}.x0);
                     x_end = rotMatrices(:,:,jj)'*(xRange(:,2) - obs{jj}.x0);
 
+                    x_Arc = zeros(size(x_obs_temp));
+                    for kk =1:size(x_obs_temp,2)
+                        x_Arc(:,kk) = rotMatrices(:,:,jj)'*(x_obs_temp(:,kk) - obs{jj}.x0);
+                    end
+%                     plot(x_Arc(1,:), x_Arc(2,:),'k')
+%                     plot(x_start(1),x_start(2), 'ro')
+%                     plot(x_end(1),x_end(2), 'ro')
+
                     % TODO remove these
-                    if max([abs(x_end(1)),abs(x_start(1))]) > a_range_old(1,:)
-                        warning('Could have complex number  \n')
-%                         xStart = x_start(1);
-% %                         nd = x_end(1)
-%                         aOld = a_range_old
-                        theta_min = sign(x_start(2))*acos(x_start(1)/a_range_old(1,:))
-                        theta_max = sign(x_end(2))*acos(x_end(1)/a_range_old(1,:))
-                        
-                        thetaRange = [sign(x_start(2))*acos(min(1,x_start(1)/a_range_old(1,:))), ...
-                                      sign(x_end(2))*acos(min(1,x_end(1)/a_range_old(1,:))) ];
-                        
+                    if max([abs(x_end(1)),abs(x_start(1))]) > abs(a_range_old(1,:))
+                        warning('Numeric apprximation of intersection finder could have a complex angle values.')
+%                         xStart = x_start(1)
+%                         xEnd = x_end(1)
+%                         aOld = a_range_old(1)
+
+                        thetaRange = [sign(x_start(2))*acos(min(1,max(-1, (x_start(1)/a_range_old(1))))), ...
+                                      sign(x_end(2))*acos(min(1,max(-1, (x_end(1)/a_range_old(1))))) ]
+                        if sum(imag(thetaRange))
+                            warning('Stayed complex!');
+                        end
+            
                     else
                         thetaRange = [sign(x_start(2))*acos(x_start(1)/a_range_old(1,:)), ...
-                                  sign(x_end(2))*acos(x_end(1)/a_range_old(1,:))];
+                                        sign(x_end(2))*acos(x_end(1)/a_range_old(1,:))];
                     end
-
-
 
                     % Resolution of the surface mapping - 2D
                     resol = resol/(n_intersec-1)*N_resol;
                     
                     [~, n_intersec, x_obs_temp, a_range_old] ...
                           = check_for_intersection(obs{jj}, obs{ii}, dist_start, N_resol, thetaRange, a_range_old, rotMat);
-                      
+                    
+%                     plot(x_obs_temp(1,:), x_obs_temp(2,:),'--')
                     while n_intersec > 0
                         % The increasing resolution caused new points,
                         % lower value of dist_0 is not bounding anymore
@@ -212,6 +239,7 @@ for ii = 1:N_obs % Center around this obstacle
         % Position the middle of shortest line connecting both obstacles
         x_middle = mean(x_obs_temp(:,ind_intersec),2);
         
+%         plot(x_middle(1),x_middle(2), 'ko', 'LineWidth',4)
         %figure;
 %         plot(x_obs_temp(1,:),x_obs_temp(2,:),'r')
 %         plot(x_middle(1,:),x_middle(2,:),'ro')

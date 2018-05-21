@@ -21,10 +21,13 @@ if isempty(regexp(path,['lib_simulation_tools' pathsep], 'once'))
     addpath([pwd, '/lib_simulation_tools']);
 end
 
+
 %% Zeros Determinant
+saveFig = true;
+
+
 % clear all;
-% 
-% 
+% % 
 % obs = [];
 % n=1; % obs number
 % obs{n}.a = [2;2];
@@ -37,10 +40,7 @@ end
 % w = 0;
 % xd = 0;
 % 
-% simulationName = 'circleAt8';
-% saveFig = true;
-
-%
+simulationName = 'circleAt8';
 
 % Place obstacles
 obs = [];
@@ -56,11 +56,10 @@ w = 0;
 xd = 0;
 
 simulationName = 'ellipseDiag';
-saveFig = true;
 
-% 
-% % %%
-% 
+
+% %%
+
 % % Place obstacles 
 % obs = [];
 % n=1;
@@ -73,9 +72,8 @@ saveFig = true;
 % 
 % w = 0;
 % xd = 0;
-% 
-% simulationName = 'ellipseVertical';
-% saveFig = false;
+
+simulationName = 'ellipseVertical';
 
 %%
 tic;
@@ -131,11 +129,15 @@ for ix = 1:N_x
 %         E(2:d,2:d) = -eye(d-1)*nv(1);
 
 %         t1 = E(1,2)
-%         t2 = E(2,2);
-        nv_hat = rotMat*nv;
+%         t2 = E(-2,2);
+        %nv_hat = rotMat*nv;
+        nv_hat = ([x1;x2]-[0;0]); %[0;0] - Attractor
         
-        t1 = nv_hat(2);
-        t2 = -nv_hat(1);
+        nv = rotMat*nv;
+%         warning('Error in nv_hat calculation \n')
+        
+        t1 = nv(2);
+        t2 = -nv(1);
         
         D = eye(d)+diag([-1,1]*1/abs(Gamma)^(1/rho) );
         l_n = D(1,1);
@@ -143,18 +145,32 @@ for ix = 1:N_x
         
 %         l_n = 1-1/(Gamma);
 %         l_t = 1+1/(Gamma);
+        
+        % Jacobian Original
+%         determinant(ix,iy) = (-0.25*d1^2*t2^2*(t1*x2 + t2*(d1 - x1))^2*(d1*t2 + t1*x2 - t2*x1)^2*(d1*l_n*t1 - d1*l_t*t1 - l_n*t1*x1 + l_n*t2*x2 + l_t*t1*x1 - l_t*t2*x2)^2 + 1.0*(t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1) - (t1*x2 + t2*(d1 - x1))*(l_n*t2*(d1 - x1) - l_n*t2*x1 + l_t*t1*x2 + t1*(l_n - l_t)*x2))*(1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2 - (d1*t2 + t1*x2 - t2*x1)*(1.0*d1*l_t*t2 + 2.0*l_n*t1*x2 - 1.0*l_n*t2*x1))*(1.0*d1^2*t2^2 + 2.0*d1*t1*t2*x2 - 2.0*d1*t2^2*x1 + 1.0*t1^2*x2^2 - 2.0*t1*t2*x1*x2 + 1.0*t2^2*x1^2)^2)/((t1*x2 + t2*(d1 - x1))^2*(d1*t2 + t1*x2 - t2*x1)^2*(1.0*d1^2*t2^2 + 2.0*d1*t1*t2*x2 - 2.0*d1*t2^2*x1 + 1.0*t1^2*x2^2 - 2.0*t1*t2*x1*x2 + 1.0*t2^2*x1^2)^2);
+        determinant(ix,iy) = (-d1*l_n*t2 - d1*l_t*t2 - 2*l_n*t1*x2 + 2*l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1);
 
         % Poles of trace and determinant
-        denominator(ix,iy) = t1*x2-t2*x1+t2*d1;
+        %denominator(ix,iy) = t1*x2-t2*x1+t2*d1;
 %         determinantNominator(ix,iy) = lambda0/2*(lambda0*t1*x2 - lambda0*t2*x1 + lambda1*t2*d1);
 %         traceNominator(ix,iy) = -((lambda0+lambda1)*t1*x2 + 2*(lambda0*t1*x2-lambda0*t2*x1));
 %         denominator(ix,iy) = t2*x1+t2*d1;
-        determinantNominator(ix,iy) = l_n/2*(l_n*t1*x2 - l_n*t2*x1 + l_t*t2*d1);
-        traceNominator(ix,iy) = -((l_n+l_t)*t2*d1 + 2*(l_n*t1*x2-l_n*t2*x1));
+        %determinantNominator(ix,iy) = l_n/2*(l_n*t1*x2 - l_n*t2*x1 + l_t*t2*d1);
+        trace(ix,iy) = 0.5*l_n*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1) ;
+        %traceNominator(ix,iy) = -((l_n+l_t)*t2*d1 + 2*(l_n*t1*x2-l_n*t2*x1));
+        %trace(ix,iy) = traceNominator(ix,iy)/denominator(ix,iy);
         
-        determinant(ix,iy) = determinantNominator(ix,iy)/denominator(ix,iy);
-        trace(ix,iy) = traceNominator(ix,iy)/denominator(ix,iy);
         
+        %trace(ix,iy) = t1*(d1 - x1)*(-l_n + l_t)*(-t2*(-l_n + l_t)*(1.0*t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 + 1.0*(-l_n*t2*(d1 - x1) + l_n*t2*x1 - l_t*t1*x2 - t1*(l_n - l_t)*x2)/(t1*x2 + t2*(d1 - x1)))*x2/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1)) + t2*(-l_n + l_t)*(-t1*(d1 - x1)*(-l_n + l_t)*(-1.0*l_n*t1*x2/(d1*t2 + t1*x2 - t2*x1) + 1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 - 1.0*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))*x2/(t1*x2 + t2*(d1 - x1)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(-t2*(-l_n + l_t)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))*x2/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(-1.0*l_n*t1*x2/(d1*t2 + t1*x2 - t2*x1) + 1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 - 1.0*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(-t1*(d1 - x1)*(-l_n + l_t)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(1.0*t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 + 1.0*(-l_n*t2*(d1 - x1) + l_n*t2*x1 - l_t*t1*x2 - t1*(l_n - l_t)*x2)/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1));
+        %trace(ix,iy) = (-1.0*d1*l_n*t2 - 1.0*d1*l_t*t2 - 2.0*l_n*t1*x2 + 2.0*l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1);
+        
+        %determinant(ix,iy) = determinantNominator(ix,iy)/denominator(ix,iy);
+        %determinant(ix,iy) = (1.0*(t1*x2 + t2*(d1 - x1))^2*(t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1) - (t1*x2 + t2*(d1 - x1))*(l_n*t2*(d1 - x1) - l_n*t2*x1 + l_t*t1*x2 + t1*(l_n - l_t)*x2))*(1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2 - (d1*t2 + t1*x2 - t2*x1)*(1.0*d1*l_t*t2 + 2.0*l_n*t1*x2 - 1.0*l_n*t2*x1))*(d1*t2 + t1*x2 - t2*x1)^2 - 0.25*(-l_n*t2*(t1*x2 + t2*(d1 - x1))^2*(d1*t2 + t1*x2 - t2*x1)*x2 + t1*(l_t*x1 - (d1 - x1)*(l_n - l_t))*(t1*x2 + t2*(d1 - x1))*(d1*t2 + t1*x2 - t2*x1)^2 + t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)*(d1*t2 + t1*x2 - t2*x1)^2 + t2*(t1*x2 + t2*(d1 - x1))^2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2)^2)/((t1*x2 + t2*(d1 - x1))^4*(d1*t2 + t1*x2 - t2*x1)^4);
+        %determinant(ix,iy) = -(t1*(d1 - x1)*(-l_n + l_t)*(-t1*(d1 - x1)*(-l_n + l_t)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(1.0*t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 + 1.0*(-l_n*t2*(d1 - x1) + l_n*t2*x1 - l_t*t1*x2 - t1*(l_n - l_t)*x2)/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(-t1*(d1 - x1)*(-l_n + l_t)*(-1.0*l_n*t1*x2/(d1*t2 + t1*x2 - t2*x1) + 1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 - 1.0*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1)))*(t2*(-l_n + l_t)*(-t2*(-l_n + l_t)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))*x2/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(-1.0*l_n*t1*x2/(d1*t2 + t1*x2 - t2*x1) + 1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 - 1.0*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))*x2/(t1*x2 + t2*(d1 - x1)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(-t2*(-l_n + l_t)*(1.0*t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 + 1.0*(-l_n*t2*(d1 - x1) + l_n*t2*x1 - l_t*t1*x2 - t1*(l_n - l_t)*x2)/(t1*x2 + t2*(d1 - x1)))*x2/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1))) + (t1*(d1 - x1)*(-l_n + l_t)*(-t2*(-l_n + l_t)*(1.0*t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 + 1.0*(-l_n*t2*(d1 - x1) + l_n*t2*x1 - l_t*t1*x2 - t1*(l_n - l_t)*x2)/(t1*x2 + t2*(d1 - x1)))*x2/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(-t2*(-l_n + l_t)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))*x2/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(-1.0*l_n*t1*x2/(d1*t2 + t1*x2 - t2*x1) + 1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 - 1.0*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1)))*(t2*(-l_n + l_t)*(-t1*(d1 - x1)*(-l_n + l_t)*(-1.0*l_n*t1*x2/(d1*t2 + t1*x2 - t2*x1) + 1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 - 1.0*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)/(d1*t2 + t1*x2 - t2*x1))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))*x2/(t1*x2 + t2*(d1 - x1)) + (l_n*t2*(d1 - x1) + l_t*t1*x2)*(-t1*(d1 - x1)*(-l_n + l_t)*(0.5*l_n*t2*x2/(d1*t2 + t1*x2 - t2*x1) - 0.5*t1*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 - 0.5*t2*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2/(d1*t2 + t1*x2 - t2*x1)^2 + 0.5*(-l_t*t1*x1 + t1*(d1 - x1)*(l_n - l_t))/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)) + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(1.0*t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1)/(t1*x2 + t2*(d1 - x1))^2 + 1.0*(-l_n*t2*(d1 - x1) + l_n*t2*x1 - l_t*t1*x2 - t1*(l_n - l_t)*x2)/(t1*x2 + t2*(d1 - x1)))/((t1*x2 + t2*(d1 - x1))*(-t1*t2*(d1 - x1)*(-l_n + l_t)^2*x2/(t1*x2 + t2*(d1 - x1))^2 + (l_n*t1*x2 + l_t*t2*(d1 - x1))*(l_n*t2*(d1 - x1) + l_t*t1*x2)/(t1*x2 + t2*(d1 - x1))^2)))/(t1*x2 + t2*(d1 - x1)));
+        %determinant(ix,iy) = (-0.25*d1^2*t2^2*(t1*x2 + t2*(d1 - x1))^2*(d1*t2 + t1*x2 - t2*x1)^2*(d1*l_n*t1 - d1*l_t*t1 - l_n*t1*x1 + l_n*t2*x2 + l_t*t1*x1 - l_t*t2*x2)^2 + 1.0*(t2*(t1*(d1 - x1)*(l_n - l_t)*x2 - (l_n*t2*(d1 - x1) + l_t*t1*x2)*x1) - (t1*x2 + t2*(d1 - x1))*(l_n*t2*(d1 - x1) - l_n*t2*x1 + l_t*t1*x2 + t1*(l_n - l_t)*x2))*(1.0*t1*(d1*l_t*t2 + l_n*t1*x2 - l_n*t2*x1)*x2 - (d1*t2 + t1*x2 - t2*x1)*(1.0*d1*l_t*t2 + 2.0*l_n*t1*x2 - 1.0*l_n*t2*x1))*(1.0*d1^2*t2^2 + 2.0*d1*t1*t2*x2 - 2.0*d1*t2^2*x1 + 1.0*t1^2*x2^2 - 2.0*t1*t2*x1*x2 + 1.0*t2^2*x1^2)^2)/((t1*x2 + t2*(d1 - x1))^2*(d1*t2 + t1*x2 - t2*x1)^2*(1.0*d1^2*t2^2 + 2.0*d1*t1*t2*x2 - 2.0*d1*t2^2*x1 + 1.0*t1^2*x2^2 - 2.0*t1*t2*x1*x2 + 1.0*t2^2*x1^2)^2);
+        
+        
+
         sqrtDet = sqrt(trace(ix,iy)^2/4-determinant(ix,iy));
         
         eigValues(1,ix,iy) = trace(ix,iy)/2 - real(sqrtDet);
@@ -260,7 +276,7 @@ V = V.*not(collisionMatrix);
 % Vectorfield
 
 close all
-for ii=1:5
+for ii=2:5
     figure;
     switch ii
 %         case 1

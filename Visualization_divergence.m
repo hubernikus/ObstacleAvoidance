@@ -25,11 +25,11 @@ end
 opt_sim.obstacle = []; %no obstacle is defined
 
 
-% fn_handle_objAvoidance = @(x,xd,obs, varargin) ...
-%                           obs_modulation_convergence(x,xd,obs,varargin);
-
 fn_handle_objAvoidance = @(x,xd,obs, varargin) ...
-                          obs_modulation_convergence_attractor(x,xd,obs,ds_handle, varargin);
+                          obs_modulation_convergence(x,xd,obs,varargin);
+
+% fn_handle_objAvoidance = @(x,xd,obs, varargin) ...
+%                           obs_modulation_convergence_attractor(x,xd,obs,ds_handle, varargin);
 
 N_points = 200;
 

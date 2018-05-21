@@ -201,3 +201,81 @@ x_range = dx+scale*[-4.5,4.5]; y_range = dy+scale*[-4.2,4.2];
 opt_sim.simulationName = 'linearSys_ellipse_rotating'
 [metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim)
 
+
+%% Ellipse with good centering
+% Set default simulation parameters
+opt_sim.dt = 0.003; %integration time steps
+opt_sim.i_max = 1000; %maximum number of iterations
+opt_sim.tol = 0.05; %convergence tolerance
+opt_sim.plot = true; %enabling the animation
+opt_sim.model = 1; %first order ordinary differential equation
+opt_sim.obstacle = []; %no obstacle is defined
+
+
+close all; clc;
+fprintf('Start 2D-Simulation \n');
+
+ds_handle = @(x) linearStableDS(x);
+fn_handle_objAvoidance = @(x,xd,obs,b_contour,varargin) ...
+                          obs_modulation_convergence(x,xd,obs,b_contour, varargin);
+N = 100;
+x0 = [ones(1,N)*20 ; linspace(-15,15,N)];
+
+% Place obstacles
+obs = [];
+i=1;
+obs{i}.a = [4;0.5];
+obs{i}.p = [3;3];
+obs{i}.x0 = [3;-2.0];
+obs{i}.sf = [1.0];
+obs{i}.th_r = 90*pi/180;
+
+i=2;
+obs{i}.a = [4;0.5];
+obs{i}.p = [3;3];
+obs{i}.x0 = [5;2.0];
+obs{i}.sf = [1.0];
+obs{i}.th_r = 90*pi/180;
+
+i=3;
+obs{i}.a = [6;0.5];
+obs{i}.p = [3;3];
+obs{i}.x0 = [3;4.0];
+obs{i}.sf = [1.0];
+obs{i}.th_r = 0*pi/180;
+
+i=4;
+obs{i}.a = [6;0.5];
+obs{i}.p = [3;3];
+obs{i}.x0 = [6;-4.0];
+obs{i}.sf = [1.0];
+obs{i}.th_r = 0*pi/180;
+% obs{i}.perturbation.t0 = 0;
+% obs{i}.perturbation.tf = 3;
+% obs{i}.perturbation.dx = [0;0];   
+% obs{i}.perturbation.w = 0;  
+
+
+% Start simulation
+opt_sim.obstacle = obs;
+opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
+opt_sim.saveFig = true;
+
+% Simulation Parameters
+N_x = 40;  N_y = N_x;
+
+scale = 1.5;
+dx = 3;
+dy = 0;
+%x_range = dx+scale*[-4.5,4.5]; y_range = dy+scale*[-4.2,4.2];
+x_range=[-4,13];
+y_range=[-8,11];
+
+
+opt_sim.simulationName = 'linearSys_ellipse_rotating'
+%[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim)
+fig(1) = figure('name','fluidDynamics_model_movingObj','position',[200 100 700 700]);
+opt_sim.figure = fig(1);
+Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
+
+

@@ -126,7 +126,7 @@ for n=1:N
         R(:,:,n) = eye(d);
     end
     x_t = R(:,:,n)'*(x-obs{n}.x0);
-    [E(:,:,n) Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
+    [E(:,:,n), Gamma(n)] = compute_basis_matrix(d,x_t,obs{n});
 %     if Gamma(n)<0.99
 %         disp(Gamma(n))
 %     end
@@ -198,7 +198,7 @@ if b_contour==1
     end
 else
     xd = M*xd; %velocity modulation
-%     if norm(M*xd)>0.05
+    %if norm(M*xd)>0.05
 %         xd = norm(xd)/norm(M*xd)*M*xd; %velocity modulation
 %     end
 end
@@ -206,6 +206,8 @@ end
 xd = xd + xd_obs; %transforming back the velocity into the global coordinate system
 
 compTime = toc;
+
+end
 
 function [E, Gamma] = compute_basis_matrix(d,x_t,obs)
 % For an arbitrary shap, the next two lines are used to find the shape segment
@@ -234,6 +236,7 @@ E(2:d,2:d) = -eye(d-1)*nv(1);
 if d == 3
     E(:,end+1) = [0;-nv(3);nv(2)];
 end
+end
 
 
 function w = compute_weights(Gamma,N)
@@ -244,6 +247,7 @@ for i=1:N
     ind = 1:N;
     ind(i) = [];
     w(i) = prod(Gamma(ind)./(Gamma(i)+Gamma(ind)));
+end
 end
 
 
@@ -259,4 +263,5 @@ elseif d == 3
     R = R_x*R_y*R_z;
 else %rotation is not yet supported for d > 3
     R = eye(d);
+end
 end

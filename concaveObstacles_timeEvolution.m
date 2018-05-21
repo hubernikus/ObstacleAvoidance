@@ -36,7 +36,7 @@ opt_sim.obstacle = []; %no obstacle is defined
 close all
 
 opt_sim.dt = 0.004; %integration time steps
-opt_sim.i_max = 500; %maximum number of iterations
+opt_sim.i_max = 10000; %maximum number of iterations
 
 taileffect = true;
 
@@ -50,7 +50,7 @@ ds_handle = @(x) linearStableDS(x, x_attractor);
 
 %fn_handle_objAvoidance= @(x,xd,obs,varargin) ...
 %                          obs_modulation_ellipsoid_3(x,xd,obs, varargin);
-fn_handle_objAvoidance= @(x,xd,obs,varargin) ...
+fn_handle_objAvoidnce= @(x,xd,obs,varargin) ...
                           obs_modulation_convergence(x,xd,obs, varargin);
                       
 N = 20;
@@ -68,11 +68,13 @@ obs{i}.x0 = [12;10];
 % obs{i}.x0 = [12;6];
 obs{i}.sf = [1];
 obs{i}.th_r = 0*pi/180;
+% obs{i}.th_r = -60*pi/180;
 obs{i}.x_center = [0.0;0];
 obs{i}.tailEffect = taileffect;
 obs{i}.perturbation.t0 = 0;
 obs{i}.perturbation.tf = 2;
 obs{i}.perturbation.dx = [0;0];   
+% obs{i}.perturbation.w = 0;  
 obs{i}.perturbation.w = 3;  
 
 i=2;
@@ -113,7 +115,7 @@ Simulation(x0,[],ds_handle,opt_sim); % NOT good IC
 
 %% Concave Obstacles
 opt_sim.dt = 0.01; %integration time steps
-opt_sim.i_max = 400; %maximum number of iterations
+opt_sim.i_max = 1000; %maximum number of iterations
 
 taileffect = true;
 
@@ -137,13 +139,15 @@ i=1;
 obs{i}.a = [1.;9];
 obs{i}.p = [1;1];
 %obs{i}.x0 = [12;38];
-obs{i}.x0 = [12;14];
+% obs{i}.x0 = [12;14];
+obs{i}.x0 = [9;14];
+% obs{i}.x0 = [12;10];
 obs{i}.sf = [1];
 obs{i}.th_r = -60*pi/180;
 obs{i}.x_center = [0.0;0];
 obs{i}.tailEffect = taileffect;
 obs{i}.perturbation.t0 = 0;
-obs{i}.perturbation.tf = 3;
+obs{i}.perturbation.tf = 5;
 obs{i}.perturbation.dx = [0;-5];  
 % :
 i=2;

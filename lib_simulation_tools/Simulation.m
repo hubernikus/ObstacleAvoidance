@@ -235,7 +235,6 @@ while true
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % This part if for the obstacle avoidance module
     if obs_bool
-        
         % Draw obstacles
         [~, x_obs_sf] = obs_draw_ellipsoid(obs,50);
         
@@ -272,6 +271,7 @@ while true
             end
         end
         
+        
         if and(or(timeVariant_simu, iSim == 1), length(obs)>1)  % Caclulate dynamic center
             % Check wheter there is an overlapping of obstacles
             [obs, intersection_obs]  = obs_common_section(obs, x_obs_sf);
@@ -293,10 +293,12 @@ while true
         % how change this!?
         for n = 1:length(obs)
             if isfield(obs{n},'perturbation') % Only redraw moving obstacle
-            plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt, obs);
+                 if iSim >= round(obs{n}.perturbation.t0/options.dt)+1 && iSim <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
+                        plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt, obs);
+                end
             end
         end
-        
+
         for j=1:nbSPoint
             %[xd(:,iSim,j), b_contour(j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
             [xd(:,iSim,j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs, xd_obs, w_obs, attractor, ds_type);
@@ -367,9 +369,10 @@ while true
     
     % Check collision
     if obs_bool 
-        for ix = 1:size(x,3)
-            [coll, ~,~] = obs_check_collision(obs, x(1,end,ix), x(2,end,ix));
-            if coll
+        [coll, ~,~] = obs_check_collision(obs, squeeze(x(1,end,:)), squeeze(x(2,end,:)));
+        if sum(coll)
+            coll_list = (1:size(x,3)) .* coll;
+            for ii = 1:coll_list
                 plot(x(1,end,ix), x(2,end,ix), 'kd', 'LineWidth', 2); hold on;
                 warning('Collision detected at x=[%f2.3, %f2.3]', x(1,end,ix),x(2,end,ix))
             end

@@ -71,7 +71,6 @@ switch mode
                     sp.obs(n) = surf(reshape(x_obs(1,:,n),n_phi,n_theta), reshape(x_obs(2,:,n),n_phi,n_theta), reshape(x_obs(3,:,n),n_phi,n_theta));
                     set(sp.obs(n),'FaceColor',[0.6 1 0.6],'linewidth',0.1)
                 end
-
             end
             xlabel('$\xi_1$','interpreter','latex','fontsize',16);
             ylabel('$\xi_2$','interpreter','latex','fontsize',16);
@@ -82,7 +81,8 @@ switch mode
             if isfield(sp,'fig')
                 figure(sp.fig)
             else
-                sp.fig = figure('name','Simulation of the task','position',[540   150   510   810]);
+                %sp.fig = figure('name','Simulation of the task','position',[540   150   510   810]);
+                title('This a title')
             end
             for i=2:d
                 sp.axis(i-1)=subplot(d-1,1,i-1);
@@ -236,6 +236,8 @@ switch mode
         if d == 2
             for n = 1:n_obs
                 if isfield(obs{n}, 'x_center_dyn')
+%                     fprintf('plot results: \n')
+%                     x_center_dyn = obs{n}.x_center_dyn
                     set(sp.x_center(n), 'XData', obs{n}.x_center_dyn(1));
                     set(sp.x_center(n), 'YData', obs{n}.x_center_dyn(2));
                 else
@@ -280,7 +282,5 @@ switch mode
                      ax.YLim(1)-(ax.YLim(2)-ax.YLim(1))/10 ax.YLi   m(2)+(ax.YLim(2)-ax.YLim(1))/10]);
             end
         end
-        
-    %createGif(sp.fig, 'testFigure)
 end
 drawnow

@@ -48,7 +48,7 @@ obs{i}.a = [0.5;2.6];
 obs{i}.p = [1;1];
 obs{i}.x0 = [3;0.0];
 obs{i}.sf = [1.0];
-obs{i}.th_r = 0*pi/180;
+obs{i}.th_r = 30*pi/180;
 
 % Start simulation
 opt_sim.obstacle = obs;

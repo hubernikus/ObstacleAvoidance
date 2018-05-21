@@ -172,7 +172,7 @@ for it_time = 1:length(timeSteps)
         set(groot,'DefaultLineLineWidth',0.8)
         xlabel('$\xi_1$','interpreter','latex')
         ylabel('$\xi_2$','interpreter','latex')
-        set(gca,'xtick',[],'ytick',[]); 
+        %set(gca,'xtick',[],'ytick',[]); 
         box on;
         %laxis off;
         %xlim([X(1,1),X(end,end)]);ylim([Y(1,1),Y(end,end)]); % Used later
@@ -194,7 +194,7 @@ for it_time = 1:length(timeSteps)
     time_createStreaslice = toc;
     
     for it_obs = 1:size(x_obs_boundary,3)
-        figure(figs{it_obs});
+        figure(figs{1});
         patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[0.6 0.6 0.6], 'FaceAlpha',1); hold on;
         contours = plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k--','LineWidth',1.2); hold on;
 
