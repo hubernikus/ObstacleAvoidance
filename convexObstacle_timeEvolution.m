@@ -11,7 +11,7 @@ rng(1) % Set seeed for repeatability of simulation
 
 %% preparing the obstacle avoidance module
 
-%adding the obstacle avoidance folder to the MATLAB path directories
+%adding the obstacle avoidance folder to the MATLABWW path directories
 if isempty(regexp(path,['lib_obstacle_avoidance' pathsep], 'once'))
     addpath([pwd, '/lib_obstacle_avoidance']);
 end

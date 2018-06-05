@@ -1,4 +1,4 @@
-function [x, xd, t, xT, x_obs] = Simulation(x0,xT,fn_handle,varargin)
+function [x_pos, xd_ds, t, xT, x_obs] = Simulation(x0,xT,fn_handle,varargin)
 %
 % This function simulates motion that were learnt using SEDS, which defines
 % a motins as a nonlinear time-independent asymptotically stable dynamical
@@ -110,7 +110,7 @@ if options.model == 2 %2nd order
         xT = zeros(2*d,1);
     elseif 2*d~=size(xT,1)
         disp('Error: length(x0) should be equal to length(xT)!')
-        x=[];xd=[];t=[];
+        x_pos=[];xd_ds=[];t=[];
         return
     end
 else
@@ -119,7 +119,7 @@ else
         xT = zeros(d,1);
     elseif d~=size(xT,1)
         disp('Error: length(x0) should be equal to length(xT)!')
-        x=[];xd=[];t=[];
+        x_pos=[];xd_ds=[];t=[];
         return
     end
 end
@@ -177,12 +177,12 @@ end
 
 %initialization
 for i=1:nbSPoint
-    x(:,1,i) = x0(:,i);
+    x_pos(:,1,i) = x0(:,i);
 end
 if options.model == 2; %2nd order
-    xd = zeros(d,1,nbSPoint);
+    xd_ds = zeros(d,1,nbSPoint);
 else
-    xd = zeros(size(x));
+    xd_ds = zeros(size(x_pos));
 end
 if size(xT) == size(x0)
     XT = xT;
@@ -199,9 +199,9 @@ if options.plot %plotting options
         sp = [];
     end
     if d>1
-        sp = plot_results('i',sp,x,xT,obs);
+        sp = plot_results('i',sp,x_pos,xT,obs);
     else
-        sp = plot_results('i',sp,[x;0],[xT;0],obs);
+        sp = plot_results('i',sp,[x_pos;0],[xT;0],obs);
     end
 end
 
@@ -224,12 +224,12 @@ while true
     if options.timeDependent
         tt = repmat(t(iSim),1,nbSPoint);
         if nargin(fn_handle) == 1
-            xd(:,iSim,:)=reshape(fn_handle([squeeze(x(:,iSim,:))-XT;tt]),[d 1 nbSPoint]);
+            xd_ds(:,iSim,:)=reshape(fn_handle([squeeze(x_pos(:,iSim,:))-XT;tt]),[d 1 nbSPoint]);
         else
-            xd(:,iSim,:)=reshape(fn_handle(tt,squeeze(x(:,iSim,:))-XT),[d 1 nbSPoint]);
+            xd_ds(:,iSim,:)=reshape(fn_handle(tt,squeeze(x_pos(:,iSim,:))-XT),[d 1 nbSPoint]);
         end
     else
-        xd(:,iSim,:)=reshape(fn_handle(squeeze(x(:,iSim,:))-XT),[d 1 nbSPoint]);
+        xd_ds(:,iSim,:)=reshape(fn_handle(squeeze(x_pos(:,iSim,:))-XT),[d 1 nbSPoint]);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -281,12 +281,12 @@ while true
             % Simulation file
             if options.plot
                 for n = 1:length(obs)
-                    plot_results('c',sp,x,xT,n, obs); % Plot new center
+                    plot_results('c',sp,x_pos,xT,n, obs); % Plot new center
                 end
             end
         elseif length(obs) == 1
             obs{1}.x_center_dyn = obs{1}.x0;
-            plot_results('c',sp,x,xT,n, obs); % Plot new center
+            plot_results('c',sp,x_pos,xT,n, obs); % Plot new center
         end
         
         % TODO -- Redrawing still seems to have a delay of obstacle center,
@@ -294,14 +294,14 @@ while true
         for n = 1:length(obs)
             if isfield(obs{n},'perturbation') % Only redraw moving obstacle
                  if iSim >= round(obs{n}.perturbation.t0/options.dt)+1 && iSim <= round(obs{n}.perturbation.tf/options.dt) && length(obs{n}.perturbation.dx)==d
-                        plot_results('o',sp,x,xT,n,obs{n}.perturbation.dx*options.dt, obs);
+                        plot_results('o',sp,x_pos,xT,n,obs{n}.perturbation.dx*options.dt, obs);
                 end
             end
         end
 
         for j=1:nbSPoint
             %[xd(:,iSim,j), b_contour(j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs,b_contour(j),xd_obs, w_obs);
-            [xd(:,iSim,j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),xd(:,iSim,j),obs, xd_obs, w_obs, attractor, ds_type);
+            [xd(:,iSim,j), ~, compTime_temp] = obsFunc_handle(x(:,iSim,j),x d(:,iSim,j),obs, xd_obs, w_obs, attractor, ds_type);
         end
         
         for n=1:length(obs) % integration of object (linear motion!) -- first order.. 
@@ -314,10 +314,10 @@ while true
     %%% Integration
     
     if options.model == 2; %2nd order
-        x(d+1:2*d,iSim+1,:)=x(d+1:2*d,iSim,:)+xd(:,iSim,:)*options.dt;
-        x(1:d,iSim+1,:)=x(1:d,iSim,:)+x(d+1:2*d,iSim,:)*options.dt;
+        x_pos(d+1:2*d,iSim+1,:)=x_pos(d+1:2*d,iSim,:)+xd_ds(:,iSim,:)*options.dt;
+        x_pos(1:d,iSim+1,:)=x_pos(1:d,iSim,:)+x_pos(d+1:2*d,iSim,:)*options.dt;
     else
-        x(:,iSim+1,:)=x(:,iSim,:)+xd(:,iSim,:)*options.dt;
+        x_pos(:,iSim+1,:)=x_pos(:,iSim,:)+xd_ds(:,iSim,:)*options.dt;
     end
     t(iSim+1)=t(iSim)+options.dt;
     
@@ -330,51 +330,51 @@ while true
                 xT(:,end+1) = xT(:,end) + options.perturbation.dx;
                 XT = repmat(xT(:,end),1,nbSPoint);
                 if options.plot %plotting options
-                    plot_results('t',sp,x,xT);
+                    plot_results('t',sp,x_pos,xT);
                 end
             else
                 xT(:,end+1) = xT(:,end);
             end
         case 'rdp' %applying robot discrete perturbation
             if iSim == round(options.perturbation.t0/options.dt)+1 && length(options.perturbation.dx)==d
-                x(:,iSim+1,:) = x(:,iSim+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint]);
+                x_pos(:,iSim+1,:) = x_pos(:,iSim+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint]);
             end
         case 'tcp' %applying target continuous perturbation
             if iSim >= round(options.perturbation.t0/options.dt)+1 && iSim <= round(options.perturbation.tf/options.dt) && length(options.perturbation.dx)==d
                 xT(:,end+1) = xT(:,end) + options.perturbation.dx*options.dt;
                 XT = repmat(xT(:,end),1,nbSPoint);
                 if options.plot %plotting options
-                    plot_results('t',sp,x,xT);
+                    plot_results('t',sp,x_pos,xT);
                 end
             elseintersection_sf
                 xT(:,end+1) = xT(:,end);
             end
         case 'rcp' %applying robot continuous perturbation
             if iSim >= round(options.perturbation.t0/options.dt)+1 && iSim <= round(options.perturbation.tf/options.dt) && length(options.perturbation.dx)==d
-                x(:,iSim+1,:) = x(:,iSim+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint])*options.dt;
+                x_pos(:,iSim+1,:) = x_pos(:,iSim+1,:) + repmat(options.perturbation.dx,[1 1 nbSPoint])*options.dt;
             end
     end
 
     % plotting the result
     if options.plot
         if d>1
-            plot_results('u',sp,x,xT);
+            plot_results('u',sp,x_pos,xT);
         else
-            plot_results('u',sp,[x(1:end-1);xd],[xT;0]);
+            plot_results('u',sp,[x_pos(1:end-1);xd_ds],[xT;0]);
         end
     end
     axis equal;
-    xd_3last = xd(:,max([1 iSim-3]):iSim,:);
+    xd_3last = xd_ds(:,max([1 iSim-3]):iSim,:);
     xd_3last(isnan(xd_3last)) = 0;
     
     % Check collision
     if obs_bool 
-        [coll, ~,~] = obs_check_collision(obs, squeeze(x(1,end,:)), squeeze(x(2,end,:)));
+        [coll, ~,~] = obs_check_collision(obs, squeeze(x_pos(1,end,:)), squeeze(x_pos(2,end,:)));
         if sum(coll)
-            coll_list = (1:size(x,3)) .* coll;
+            coll_list = (1:size(x_pos,3)) .* coll;
             for ii = 1:coll_list
-                plot(x(1,end,ix), x(2,end,ix), 'kd', 'LineWidth', 2); hold on;
-                warning('Collision detected at x=[%f2.3, %f2.3]', x(1,end,ix),x(2,end,ix))
+                plot(x_pos(1,end,ix), x_pos(2,end,ix), 'kd', 'LineWidth', 2); hold on;
+                warning('Collision detected at x=[%f2.3, %f2.3]', x_pos(1,end,ix),x_pos(2,end,ix))
             end
         end
     end
@@ -392,11 +392,11 @@ while true
     %Checking the convergence
     if all(all(all(abs(xd_3last)<options.tol))) || iSim>options.i_max-2
         if options.plot
-            plot_results('f',sp,x,xT);
+            plot_results('f',sp,x_pos,xT);
         end
         iSim=iSim+1;
 %         xd(:,i,:)=reshape(fn_handle(squeeze(x(:,i,:))-XT),[d 1 nbSPoint]);
-        x(:,end,:) = [];
+        x_pos(:,end,:) = [];
         t(end) = [];
         fprintf('Number of Iterations: %1.0f\n',iSim)
         tmp='';
@@ -405,7 +405,7 @@ while true
         end
         tmp=tmp(2:end-2);
         fprintf('Final Time: %1.2f (sec)\n',t(1,end,1))
-        fprintf(['Final Point: [' tmp ']\n'],squeeze(x(:,end,:)))
+        fprintf(['Final Point: [' tmp ']\n'],squeeze(x_pos(:,end,:)))
         fprintf(['Target Position: [' tmp ']\n'],xT(:,end))
         fprintf('## #####################################################\n\n\n')
         
