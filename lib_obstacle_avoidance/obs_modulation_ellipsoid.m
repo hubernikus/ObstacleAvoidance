@@ -85,6 +85,7 @@ xd_w_obs = zeros(d,N); %velocity due to the rotation of the obstacle
 
 % Weird behavior of varargin when creating function handle, this can be
 % removed by adding this line. 
+
 switch(class(varargin{1}))
      case 'cell'
          varargin = varargin{1};
@@ -178,10 +179,10 @@ end
 
 E(:,:,n) = R(:,:,n)*E(:,:,n); %transforming the basis vector into the global coordinate system
 
-if b_contour==0 && (D(1) < -0.98) && (E(:,1,n)'*xd < 0) && (norm(M*xd)<0.02)
-    b_contour = true;
-    disp('Contouring started ... ')
-end
+%if b_contour==0 && (D(1) < -0.98) && (E(:,1,n)'*xd < 0) && (norm(M*xd)<0.02)
+%    b_contour = true;
+%    disp('Contouring started ... ')
+%end
 
 if b_contour==1
     contour_dir = sum(E(:,obs{n}.extra.ind,n),2); %extra.ind defines the desired eigenvalues to move along it

@@ -31,6 +31,130 @@ opt_sim.plot = true; %enabling the animation
 opt_sim.model = 1; %first order ordinary differential equation
 opt_sim.obstacle = []; %no obstacle is defined
 
+
+%% Ellipse with good centering
+%close all; clc;
+fprintf('Start 2D-Simulation \n');
+
+ds_handle = @(x) linearStableDS(x);
+fn_handle_objAvoidance = @(x,xd,obs,varargin) ...
+                          obs_modulation_convergence(x,xd,obs,varargin);
+% fn_handle_objAvoidance = @(x,xd, obs, varargin) ...
+%                           obs_modulation_elastic(x,xd,obs, ds_handle, varargin);
+% fn_handle_objAvoidance = @(x,xd, obs, varargin) ...
+%                           obs_modulation_convergence_attractor(x,xd,obs, ds_handle, varargin);
+                      
+% Place obstacles
+obs = [];
+i=1;
+obs{i}.a = [2;2];
+obs{i}.p = [1;1];
+obs{i}.x0 = [3.5;0.0];
+obs{i}.sf = [1.0];
+obs{i}.th_r = 0*pi/180;
+
+% Start simulation
+opt_sim.obstacle = obs;
+opt_sim.ds_handle = ds_handle;
+opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
+opt_sim.saveFig = true;
+opt_sim.saveInitialFig = true;
+
+
+% Simulation Parameters
+N_x = 100;  N_y = N_x;
+
+scale = 1;
+dx = 3;
+dy = 0;
+x_range = dx+scale*[-4.5,4.5]; y_range = dy+scale*[-4.2,4.2];
+
+opt_sim.simulationName = 'linearSys_circle_notMoving'
+[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+
+
+%% Ellipse with good centering
+%close all; clc;
+fprintf('Start 2D-Simulation \n');
+
+ds_handle = @(x) linearStableDS(x);
+fn_handle_objAvoidance = @(x,xd,obs,varargin) ...
+                          obs_modulation_convergence(x,xd,obs,varargin);
+% fn_handle_objAvoidance = @(x,xd, obs, varargin) ...
+%                           obs_modulation_elastic(x,xd,obs, ds_handle, varargin);
+% fn_handle_objAvoidance = @(x,xd, obs, varargin) ...
+%                           obs_modulation_convergence_attractor(x,xd,obs, ds_handle, varargin);
+                      
+% Place obstacles
+obs = [];
+i=1;
+obs{i}.a = [1;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [3.5;0.0];
+obs{i}.sf = [1.0];
+obs{i}.th_r = 0*pi/180;
+
+% Start simulation
+opt_sim.obstacle = obs;
+opt_sim.ds_handle = ds_handle;
+opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
+opt_sim.saveFig = true;
+opt_sim.saveInitialFig = false;
+
+
+% Simulation Parameters
+N_x = 100;  N_y = N_x;
+
+scale = 1;
+dx = 3;
+dy = 0;
+x_range = dx+scale*[-4.5,4.5]; y_range = dy+scale*[-4.2,4.2];
+
+opt_sim.simulationName = 'linearSys_ellipsoid_notMoving'
+[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+
+
+%% Ellipse with good centering
+%close all; clc;
+fprintf('Start 2D-Simulation \n');
+
+ds_handle = @(x) linearStableDS(x);
+fn_handle_objAvoidance = @(x,xd,obs,varargin) ...
+                          obs_modulation_convergence(x,xd,obs,varargin);
+% fn_handle_objAvoidance = @(x,xd, obs, varargin) ...
+%                           obs_modulation_elastic(x,xd,obs, ds_handle, varargin);
+% fn_handle_objAvoidance = @(x,xd, obs, varargin) ...
+%                           obs_modulation_convergence_attractor(x,xd,obs, ds_handle, varargin);
+                      
+% Place obstacles
+obs = [];
+i=1;
+obs{i}.a = [1;3];
+obs{i}.p = [1;1];
+obs{i}.x0 = [3.5;0.0];
+obs{i}.sf = [1.0];
+obs{i}.th_r = 0*pi/180;
+
+% Start simulation
+opt_sim.obstacle = obs;
+opt_sim.ds_handle = ds_handle;
+opt_sim.obstacleAvoidanceFunction = fn_handle_objAvoidance;
+opt_sim.saveFig = true;
+opt_sim.saveInitialFig = false;
+
+
+% Simulation Parameters
+N_x = 100;  N_y = N_x;
+
+scale = 1;
+dx = 3;
+dy = 0;
+x_range = dx+scale*[-4.5,4.5]; y_range = dy+scale*[-4.2,4.2];
+
+opt_sim.simulationName = 'linearSys_ellipsoid_notMoving_convergence'
+[metrics] = Simulation_vectorField(x_range, y_range, N_x, N_y, ds_handle, opt_sim);
+
+
 %% Ellipse with good centering
 %close all; clc;
 fprintf('Start 2D-Simulation \n');

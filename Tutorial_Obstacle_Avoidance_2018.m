@@ -249,7 +249,7 @@ disp(' ')
 disp('In following demo, we observe two moving obstacles. The first ')
 disp('is moving in such a way, that it collides with the second one and ')
 disp('temporarily forms a concave region. The center of the obstacles ')
-dispe('circle has to dynamically adapt to compensate for this.')
+disp('circle has to dynamically adapt to compensate for this.')
 
 obs{1}.x0 = [-8;6];
 obs{1}.perturbation.w = 0;  

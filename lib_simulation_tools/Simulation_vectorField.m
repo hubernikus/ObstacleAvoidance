@@ -138,7 +138,7 @@ for it_time = 1:length(timeSteps)
                     xd_noColl(:,ix,iy) = xd_bar(:,ix,iy);
                     %[xd_converge(:,ix,iy),~,compTime_ellips] = obs_modulation_convergence([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs,  xd_obs,w_obs);
                     %[xd_converge(:,ix,iy),~,compTime_ellips] = obs_modulation_elastic([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs, ds_handle, xd_obs, w_obs, attractor);
-                    %[xd_converge(:,ix,iy),~,~] = obstacleAvoidanceFunction([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs, xd_obs, w_obs);
+                    %[xd_converge(:,ix,iy),~,~] = obs_modulation_ellipsoid([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs, xd_obs, w_obs);
                     [xd_converge(:,ix,iy),~,~] = obstacleAvoidanceFunction([X(ix,iy);Y(ix,iy)],xd_bar(:,ix,iy), obs, xd_obs, w_obs, attractor, ds_type);
                 end
             end
@@ -193,54 +193,57 @@ for it_time = 1:length(timeSteps)
     
     time_createStreaslice = toc;
     
-    for it_obs = 1:size(x_obs_boundary,3)
-        figure(figs{1});
-        patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[0.6 0.6 0.6], 'FaceAlpha',1); hold on;
-        contours = plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k--','LineWidth',1.2); hold on;
+    if obs_bool
+        for it_obs = 1:size(x_obs_boundary,3)
+            figure(figs{1});
+            %patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[0.6 0.6 0.6], 'FaceAlpha',1); hold on;
+            patchs = patch(x_obs_boundary(1,:,it_obs),x_obs_boundary(2,:,it_obs),[145,87,87]/255, 'FaceAlpha',1); hold on;
+            contours = plot(x_obs_sf(1,:,it_obs),x_obs_sf(2,:,it_obs),'k--','LineWidth',1.2); hold on;
 
-        mainAxis = get(patchs, 'Parent'); % Get main axis
+            mainAxis = get(patchs, 'Parent'); % Get main axis
 
-        % Define arrow parameters
-        rotCol = [0.6 0.0 0];
-        velCol = [0.4 0.0 0.6];
-        lw = 3;
+            % Define arrow parameters
+            rotCol = [0.6 0.0 0];
+            velCol = [0.4 0.0 0.6];
+            lw = 3;
 
-        if(sum(abs(xd_obs(:,it_obs)))) % create velocity arrow
-            arroVel = drawArrow([obs{it_obs}.x0(1),obs{it_obs}.x0(1)+xd_obs(1,it_obs)], ...
-                      [obs{it_obs}.x0(2),obs{it_obs}.x0(2)+xd_obs(2,it_obs)],...
-                      {'color', velCol, 'LineWidth',lw},mainAxis);
-        end
-
-        if(w_obs(it_obs)) % create agnular rate arrow
-           r_angRate = max(obs{it_obs}.a)*0.7;
-           arc_angRate = w_obs(it_obs)/2*pi+pi/5;
-           arc_angRate = min(abs(arc_angRate), pi*3/4)*sign(arc_angRate);
-           arc_angRate = max(abs(arc_angRate),pi/5)*sign(arc_angRate);
-
-           samp_it = 0:5;
-           x_angRate = obs{it_obs}.x0(1)+ -r_angRate*sin(-arc_angRate/2+arc_angRate/samp_it(end)*samp_it);
-           y_angRate = obs{it_obs}.x0(2) + r_angRate*cos(-arc_angRate/2+arc_angRate/samp_it(end)*samp_it);
-           plot(x_angRate(1:end-1), y_angRate(1:end-1), 'color',rotCol,'LineWidth',lw); hold on;
-           dx = (x_angRate(end)-x_angRate(end-1));
-           dy = (y_angRate(end)-y_angRate(end-1));
-
-           arrowAngRate = drawArrow(x_angRate(end-1:end),y_angRate(end-1:end),{'color', rotCol, 'LineWidth',lw},mainAxis); hold on;
-
-           uistack(patchs,'down',2) % path in behind velocity arrows
-        end
-
-        % --- Draw the center used by the pseudo normal --- 
-        if isfield(obs{it_obs}, 'x_center_dyn')
-            plot(obs{it_obs}.x_center_dyn(1),obs{it_obs}.x_center_dyn(2),'k+','LineWidth',2.3); hold on;
-        else
-            if ~isfield(obs{it_obs}, 'x_center')
-                obs{it_obs}.x_center = [0;0];
+            if(sum(abs(xd_obs(:,it_obs)))) % create velocity arrow
+                arroVel = drawArrow([obs{it_obs}.x0(1),obs{it_obs}.x0(1)+xd_obs(1,it_obs)], ...
+                          [obs{it_obs}.x0(2),obs{it_obs}.x0(2)+xd_obs(2,it_obs)],...
+                          {'color', velCol, 'LineWidth',lw},mainAxis);
             end
-            cosAng = cos(obs{it_obs}.th_r);
-            sinAng = sin(obs{it_obs}.th_r);
-            R = [cosAng, -sinAng; sinAng, cosAng];
-            pos = obs{it_obs}.x0 + R*(obs{it_obs}.a.*obs{it_obs}.x_center);
-            plot(pos(1),pos(2),'k+','LineWidth',2.3); hold on;
+
+            if(w_obs(it_obs)) % create agnular rate arrow
+               r_angRate = max(obs{it_obs}.a)*0.7;
+               arc_angRate = w_obs(it_obs)/2*pi+pi/5;
+               arc_angRate = min(abs(arc_angRate), pi*3/4)*sign(arc_angRate);
+               arc_angRate = max(abs(arc_angRate),pi/5)*sign(arc_angRate);
+
+               samp_it = 0:5;
+               x_angRate = obs{it_obs}.x0(1)+ -r_angRate*sin(-arc_angRate/2+arc_angRate/samp_it(end)*samp_it);
+               y_angRate = obs{it_obs}.x0(2) + r_angRate*cos(-arc_angRate/2+arc_angRate/samp_it(end)*samp_it);
+               plot(x_angRate(1:end-1), y_angRate(1:end-1), 'color',rotCol,'LineWidth',lw); hold on;
+               dx = (x_angRate(end)-x_angRate(end-1));
+               dy = (y_angRate(end)-y_angRate(end-1));
+
+               arrowAngRate = drawArrow(x_angRate(end-1:end),y_angRate(end-1:end),{'color', rotCol, 'LineWidth',lw},mainAxis); hold on;
+
+               uistack(patchs,'down',2) % path in behind velocity arrows
+            end
+
+            % --- Draw the center used by the pseudo normal --- 
+            if isfield(obs{it_obs}, 'x_center_dyn')
+                plot(obs{it_obs}.x_center_dyn(1),obs{it_obs}.x_center_dyn(2),'k+','LineWidth',2.3); hold on;
+            else
+                if ~isfield(obs{it_obs}, 'x_center')
+                    obs{it_obs}.x_center = [0;0];
+                end
+                cosAng = cos(obs{it_obs}.th_r);
+                sinAng = sin(obs{it_obs}.th_r);
+                R = [cosAng, -sinAng; sinAng, cosAng];
+                pos = obs{it_obs}.x0 + R*(obs{it_obs}.a.*obs{it_obs}.x_center);
+                plot(pos(1),pos(2),'k+','LineWidth',2.3); hold on;
+            end
         end
     end
     
